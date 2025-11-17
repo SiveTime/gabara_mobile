@@ -1,47 +1,12 @@
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; // <-- IMPORT BARU
 import '../../../../core/error/failures.dart';
-import '../../domain/entities/user_entity.dart';
-import '../../domain/usecases/login_user.dart';
-import '../../domain/usecases/register_user.dart';
+// ... (import lainnya sama)
 
-enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
+// ... (enum AuthStatus sama)
 
 class AuthProvider extends ChangeNotifier {
-  final LoginUser loginUser;
-  final RegisterUser registerUser;
-
-  AuthProvider({
-    required this.loginUser,
-    required this.registerUser,
-  });
-
-  AuthStatus _status = AuthStatus.initial;
-  UserEntity? _user;
-  Failure? _failure;
-
-  AuthStatus get status => _status;
-  UserEntity? get user => _user;
-  Failure? get failure => _failure;
-  bool get isLoading => _status == AuthStatus.loading;
-
-  void _setLoading() {
-    _status = AuthStatus.loading;
-    _failure = null;
-    notifyListeners();
-  }
-
-  void _setError(Failure failure) {
-    _status = AuthStatus.error;
-    _failure = failure;
-    notifyListeners();
-  }
-
-  void _setAuthenticated(UserEntity user) {
-    _status = AuthStatus.authenticated;
-    _user = user;
-    _failure = null;
-    notifyListeners();
-  }
+// ... (kode constructor, status, user, failure, dll sama) ...
 
   Future<UserEntity?> login(String email, String password) async {
     try {
@@ -54,6 +19,9 @@ class AuthProvider extends ChangeNotifier {
       _user = await loginUser(email, password);
       _setAuthenticated(_user!);
       return _user;
+    } on AuthException catch (e) { // <-- TANGANI ERROR SUPABASE
+      _setError(AuthenticationFailure(message: e.message));
+      return null;
     } on Failure catch (e) {
       _setError(e);
       return null;
@@ -63,17 +31,40 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<UserEntity?> register(String name, String email, String password) async {
+  Future<UserEntity?> register(
+    String name,
+    String email,
+    String password,
+    String noHp,
+    String jenisKelamin,
+    String tanggalLahir,
+  ) async {
     try {
-      if (name.isEmpty || email.isEmpty || password.isEmpty) {
+      // Validasi bisa dilakukan di sini
+      if (name.isEmpty ||
+          email.isEmpty ||
+          password.isEmpty ||
+          noHp.isEmpty ||
+          jenisKelamin.isEmpty || // <-- Seharusnya jenisKelamin != null
+          tanggalLahir.isEmpty) {
         throw const ValidationFailure(
           message: 'Semua field harus diisi',
         );
       }
       _setLoading();
-      _user = await registerUser(name, email, password);
+      _user = await registerUser(
+        name,
+        email,
+        password,
+        noHp,
+        jenisKelamin,
+        tanggalLahir,
+      );
       _setAuthenticated(_user!);
       return _user;
+    } on AuthException catch (e) { // <-- TANGANI ERROR SUPABASE
+      _setError(AuthenticationFailure(message: e.message));
+      return null;
     } on Failure catch (e) {
       _setError(e);
       return null;
@@ -84,8 +75,6 @@ class AuthProvider extends ChangeNotifier {
   }
 
   void logout() {
-    _user = null;
-    _status = AuthStatus.unauthenticated;
-    notifyListeners();
+// ... (kode logout sama) ...
   }
 }

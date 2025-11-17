@@ -33,9 +33,14 @@ class _DashboardPageState extends State<DashboardPage> {
     final provider = Provider.of<AuthProvider>(context);
     
     // If user is not authenticated, redirect to login
+    // Pengecekan ini penting jika user membuka app dan masih punya token,
+    // tapi jika tokennya invalid atau sudah logout, ini akan redirect.
     if (provider.user == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.pushReplacementNamed(context, '/login');
+        // Cek 'mounted' untuk memastikan widget masih ada di tree
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/login');
+        }
       });
       return const Scaffold(
         body: Center(
@@ -123,7 +128,8 @@ class _DashboardPageState extends State<DashboardPage> {
 
   // --- PERUBAHAN 2: Navigasi di _buildProfilePopupMenu sudah benar ---
   Widget _buildProfilePopupMenu() {
-    final provider = Provider.of<AuthProvider>(context);
+    // Ambil provider. 'listen: false' aman di sini karena hanya untuk aksi.
+    final provider = Provider.of<AuthProvider>(context, listen: false);
     final user = provider.user!;
 
     return PopupMenuButton<String>(
@@ -135,9 +141,13 @@ class _DashboardPageState extends State<DashboardPage> {
             MaterialPageRoute(builder: (context) => const ProfilePage()),
           );
         } else if (value == 'logout') {
-          // Logout dan kembali ke HomePage
-          provider.logout();
+          // --- PERBAIKAN LOGOUT ---
+          // 1. Navigasi ke home ('/') dan hapus semua riwayat navigasi.
           Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+          // 2. SETELAH navigasi selesai, baru panggil logout() dari provider.
+          //    Ini mencegah redirect di halaman dashboard (yang akan di-dispose)
+          //    untuk ter-trigger.
+          provider.logout();
         }
       },
       icon: const Icon(Icons.more_vert, color: Colors.black),
@@ -197,7 +207,7 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildWelcomeSection(BuildContext context) {
-    final provider = Provider.of<AuthProvider>(context);
+    final provider = Provider.of<AuthProvider>(context, listen: false);
     final user = provider.user!;
 
     return Container(

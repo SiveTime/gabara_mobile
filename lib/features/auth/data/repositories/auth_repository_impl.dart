@@ -1,28 +1,70 @@
+import 'package:supabase_flutter/supabase_flutter.dart'; // <-- IMPORT BARU
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../services/auth_service.dart';
+import '../models/user_model.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
+  final AuthService authService;
+
+  AuthRepositoryImpl(this.authService);
+
   @override
   Future<UserEntity> login(String email, String password) async {
-    // TODO: Implement actual login with API
-    await Future.delayed(const Duration(seconds: 2)); // Simulate network delay
-    return UserEntity(
-      id: '1',
-      name: 'Test User',
-      email: email,
-      token: 'dummy_token',
-    );
+    // --- SELESAIKAN TODO LOGIN ---
+    try {
+      final userModel = await authService.login(email, password);
+      // Konversi dari UserModel (Data) ke UserEntity (Domain)
+      return UserEntity(
+        id: userModel.id,
+        name: userModel.name,
+        email: userModel.email,
+        token: userModel.token,
+      );
+    } on AuthException catch (e) {
+      // Tangani error spesifik Supabase
+      throw Exception('Login gagal: ${e.message}');
+    } catch (e) {
+      // Tangani error umum
+      rethrow;
+    }
+    // -----------------------------
   }
 
   @override
-  Future<UserEntity> register(String name, String email, String password) async {
-    // TODO: Implement actual registration with API
-    await Future.delayed(const Duration(seconds: 2)); // Simulate network delay
-    return UserEntity(
-      id: '1',
-      name: name,
-      email: email,
-      token: 'dummy_token',
-    );
+  Future<UserEntity> register(
+    String name,
+    String email,
+    String password,
+    String noHp,
+    String jenisKelamin,
+    String tanggalLahir,
+  ) async {
+    // --- GANTI MOCK DENGAN API CALL ---
+    try {
+      final userModel = await authService.register(
+        name,
+        email,
+        password,
+        noHp,
+        jenisKelamin,
+        tanggalLahir,
+      );
+
+      // Konversi dari UserModel (Data) ke UserEntity (Domain)
+      return UserEntity(
+        id: userModel.id,
+        name: userModel.name,
+        email: userModel.email,
+        token: userModel.token,
+      );
+    } on AuthException catch (e) {
+      // Tangani error spesifik Supabase
+      throw Exception('Registrasi gagal: ${e.message}');
+    } catch (e) {
+      // Tangani error umum
+      rethrow;
+    }
+    // --------------------------------
   }
 }
