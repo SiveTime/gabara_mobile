@@ -8,11 +8,18 @@ import 'presentation/pages/dashboard_page.dart';
 import 'features/auth/domain/usecases/login_user.dart';
 import 'features/auth/domain/usecases/register_user.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 // Import halaman lain yang sudah direfaktor (placeholder)
 // import 'presentation/pages/dashboard_page.dart';
 // import 'features/class/presentation/pages/class_page.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: 'https://amtbfcezkbjooqpoifpm.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtdGJmY2V6a2Jqb29xcG9pZnBtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzODU4ODYsImV4cCI6MjA3ODk2MTg4Nn0.5vGCNl_ojinzSuvM7O9aYM9zhT6YWnLdKzfmfD2iZ9Y',
+  );
   runApp(const MyApp());
 }
 
