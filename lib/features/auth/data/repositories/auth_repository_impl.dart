@@ -2,7 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart'; // <-- IMPORT BARU
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../services/auth_service.dart';
-import '../models/user_model.dart';
+// import '../models/user_model.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final AuthService authService;
