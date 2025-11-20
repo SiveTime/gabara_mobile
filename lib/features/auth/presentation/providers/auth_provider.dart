@@ -1,96 +1,87 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-// --- BAGIAN INI YANG KURANG DI KODE KAMU ---
-import '../../../../core/error/failures.dart'; // Import Failure
-import '../../domain/entities/user_entity.dart'; // Import UserEntity
+import '../../domain/entities/user_entity.dart';
 import '../../domain/usecases/login_user.dart';
 import '../../domain/usecases/register_user.dart';
-// -------------------------------------------
-
-enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
 
 class AuthProvider extends ChangeNotifier {
   final LoginUser loginUser;
   final RegisterUser registerUser;
 
-  AuthProvider({
-    required this.loginUser,
-    required this.registerUser,
-  });
+  AuthProvider({required this.loginUser, required this.registerUser});
 
-  AuthStatus _status = AuthStatus.initial;
   UserEntity? _user;
-  Failure? _failure;
+  bool _isLoading = false;
+  String? _errorMessage;
 
-  AuthStatus get status => _status;
   UserEntity? get user => _user;
-  Failure? get failure => _failure;
-  bool get isLoading => _status == AuthStatus.loading;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
 
-  // Setter state private
-  void _setLoading() {
-    _status = AuthStatus.loading;
-    _failure = null;
+  bool get isAuthenticated => _user != null;
+
+  // Fungsi Login (DIPERBAIKI)
+  Future<bool> login(String email, String password) async {
+    _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
-  }
 
-  void _setAuthenticated(UserEntity user) {
-    _status = AuthStatus.authenticated;
-    _user = user;
-    _failure = null;
-    notifyListeners();
-  }
-
-  void _setError(Failure failure) {
-    _status = AuthStatus.error;
-    _failure = failure;
-    notifyListeners();
-  }
-
-  // Fungsi Login
-  Future<void> login(String email, String password) async {
-    _setLoading();
     try {
-      final result = await loginUser(email, password);
-      _setAuthenticated(result);
-    } on Failure catch (e) {
-      _setError(e);
+      // KOREKSI: Langsung kirim email & password, tanpa LoginParams
+      final result = await loginUser.call(email, password);
+
+      _user = result;
+      _isLoading = false;
+      notifyListeners();
+      return true;
     } catch (e) {
-      _setError(ServerFailure(message: e.toString()));
+      _isLoading = false;
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
     }
   }
 
-  // Fungsi Register (Perbaiki parameter agar sesuai UI)
-  Future<void> register(
+  // Fungsi Register (DIPERBAIKI)
+  Future<bool> register(
     String name,
     String email,
     String password,
-    String noHp,
-    String jenisKelamin,
-    String tanggalLahir,
+    String role, 
+    String phone, 
+    String gender,
+    String birthDate,
   ) async {
-    _setLoading();
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
     try {
-      final result = await registerUser(
-        name, 
-        email, 
-        password, 
-        noHp, 
-        jenisKelamin, 
-        tanggalLahir
+      // KOREKSI: Langsung kirim semua argumen berurutan, tanpa RegisterParams
+      final result = await registerUser.call(
+        name,
+        email,
+        password,
+        role, 
+        phone, 
+        gender,
+        birthDate,
       );
-      _setAuthenticated(result);
-    } on Failure catch (e) {
-      _setError(e);
+
+      _user = result;
+      _isLoading = false;
+      notifyListeners();
+      return true;
     } catch (e) {
-      _setError(ServerFailure(message: e.toString()));
+      _isLoading = false;
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
     }
   }
 
-  void logout() {
-    Supabase.instance.client.auth.signOut();
-    _status = AuthStatus.unauthenticated;
+  Future<void> logout() async {
+    await Supabase.instance.client.auth.signOut();
     _user = null;
     notifyListeners();
   }

@@ -23,11 +23,13 @@ class _RegisterPageState extends State<RegisterPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _hpController = TextEditingController(); // Controller No HP
-  final _tanggalLahirController = TextEditingController(); // Controller Tanggal Lahir
+  final _tanggalLahirController =
+      TextEditingController(); // Controller Tanggal Lahir
 
   // Variabel state
   bool _obscureText = true; // Untuk sembunyikan password
   String? _selectedGender; // Untuk menyimpan pilihan Gender
+  String? _selectedRole; // Untuk menyimpan pilihan Role
 
   @override
   void dispose() {
@@ -44,7 +46,9 @@ class _RegisterPageState extends State<RegisterPage> {
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
-      initialDate: DateTime(2005), // Default tahun awal (misal asumsi umur siswa)
+      initialDate: DateTime(
+        2005,
+      ), // Default tahun awal (misal asumsi umur siswa)
       firstDate: DateTime(1950),
       lastDate: DateTime.now(),
     );
@@ -72,10 +76,8 @@ class _RegisterPageState extends State<RegisterPage> {
             fit: BoxFit.cover,
             errorBuilder: (ctx, err, stack) => Container(color: Colors.grey),
           ),
-          
-          // 2. Overlay Hitam Transparan (Supaya tulisan terbaca)
+          // 2. Overlay Gelap
           Container(color: Colors.black.withOpacity(0.4)),
-
           // 3. Konten Form
           SafeArea(
             child: Center(
@@ -94,50 +96,27 @@ class _RegisterPageState extends State<RegisterPage> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // Tombol Back
-                          Align(
-                            alignment: Alignment.topLeft,
-                            child: IconButton(
-                              icon: const Icon(Icons.arrow_back),
-                              onPressed: () => Navigator.maybePop(context),
-                            ),
-                          ),
-
-                          // Logo
-                          Center(
-                            child: Image.asset(
-                              'assets/GabaraColor.png',
-                              height: 40,
-                              errorBuilder: (c, e, s) => const Text('Gabara',
-                                  style: TextStyle(
-                                      fontSize: 24, fontWeight: FontWeight.bold)),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          
+                          // Judul
                           const Text(
                             'Registrasi',
-                            textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 24, 
-                              fontWeight: FontWeight.bold
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
                             ),
+                            textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 24),
-
-                          // --- INPUT FIELDS ---
 
                           // 1. Nama Lengkap
                           TextFormField(
                             controller: _nameController,
                             decoration: const InputDecoration(
                               labelText: 'Nama Lengkap',
-                              prefixIcon: Icon(Icons.person_outline),
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.all(Radius.circular(12))),
+                              border: OutlineInputBorder(),
                             ),
-                            validator: (v) =>
-                                (v == null || v.isEmpty) ? 'Nama wajib diisi' : null,
+                            validator: (value) => value!.isEmpty
+                                ? 'Nama tidak boleh kosong'
+                                : null,
                           ),
                           const SizedBox(height: 16),
 
@@ -146,129 +125,199 @@ class _RegisterPageState extends State<RegisterPage> {
                             controller: _emailController,
                             decoration: const InputDecoration(
                               labelText: 'Email',
-                              prefixIcon: Icon(Icons.email_outlined),
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.all(Radius.circular(12))),
+                              border: OutlineInputBorder(),
                             ),
-                            validator: (v) =>
-                                (v == null || v.isEmpty) ? 'Email wajib diisi' : null,
+                            keyboardType: TextInputType.emailAddress,
+                            validator: (value) {
+                              if (value!.isEmpty)
+                                return 'Email tidak boleh kosong';
+                              if (!RegExp(
+                                r'^[^@]+@[^@]+\.[^@]+',
+                              ).hasMatch(value)) {
+                                return 'Format email tidak valid';
+                              }
+                              return null;
+                            },
                           ),
                           const SizedBox(height: 16),
 
-                          // 3. No HP (Yang sebelumnya error karena hilang)
+                          // 3. Password
+                          TextFormField(
+                            controller: _passwordController,
+                            decoration: InputDecoration(
+                              labelText: 'Password',
+                              border: const OutlineInputBorder(),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscureText
+                                      ? Icons.visibility
+                                      : Icons.visibility_off,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _obscureText = !_obscureText;
+                                  });
+                                },
+                              ),
+                            ),
+                            obscureText: _obscureText,
+                            validator: (value) {
+                              if (value!.isEmpty)
+                                return 'Password tidak boleh kosong';
+                              if (value.length < 6)
+                                return 'Password minimal 6 karakter';
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+
+                          // 4. No HP
                           TextFormField(
                             controller: _hpController,
                             decoration: const InputDecoration(
                               labelText: 'No HP',
-                              prefixIcon: Icon(Icons.phone_android),
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.all(Radius.circular(12))),
+                              border: OutlineInputBorder(),
                             ),
                             keyboardType: TextInputType.phone,
-                            validator: (v) =>
-                                (v == null || v.isEmpty) ? 'No HP wajib diisi' : null,
-                          ),
-                          const SizedBox(height: 16),
-
-                          // 4. Jenis Kelamin Dropdown
-                          DropdownButtonFormField<String>(
-                            value: _selectedGender,
-                            decoration: const InputDecoration(
-                              labelText: 'Jenis Kelamin',
-                              prefixIcon: Icon(Icons.wc),
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.all(Radius.circular(12))),
-                            ),
-                            items: ['Laki-laki', 'Perempuan']
-                                .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                                .toList(),
-                            onChanged: (v) => setState(() => _selectedGender = v),
-                            validator: (v) => v == null ? 'Pilih jenis kelamin' : null,
+                            validator: (value) => value!.isEmpty
+                                ? 'No HP tidak boleh kosong'
+                                : null,
                           ),
                           const SizedBox(height: 16),
 
                           // 5. Tanggal Lahir
                           TextFormField(
                             controller: _tanggalLahirController,
-                            readOnly: true, // Tidak bisa diketik manual, harus lewat picker
-                            decoration: const InputDecoration(
-                              labelText: 'Tanggal Lahir',
-                              prefixIcon: Icon(Icons.calendar_today),
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.all(Radius.circular(12))),
-                            ),
-                            onTap: () => _selectDate(context),
-                            validator: (v) =>
-                                (v == null || v.isEmpty) ? 'Tanggal lahir wajib diisi' : null,
-                          ),
-                          const SizedBox(height: 16),
-
-                          // 6. Password
-                          TextFormField(
-                            controller: _passwordController,
-                            obscureText: _obscureText,
                             decoration: InputDecoration(
-                              labelText: 'Password',
-                              prefixIcon: const Icon(Icons.lock_outline),
-                              border: const OutlineInputBorder(
-                                  borderRadius: BorderRadius.all(Radius.circular(12))),
+                              labelText: 'Tanggal Lahir',
+                              border: const OutlineInputBorder(),
                               suffixIcon: IconButton(
-                                icon: Icon(_obscureText
-                                    ? Icons.visibility_off
-                                    : Icons.visibility),
-                                onPressed: () =>
-                                    setState(() => _obscureText = !_obscureText),
+                                icon: const Icon(Icons.calendar_today),
+                                onPressed: () => _selectDate(context),
                               ),
                             ),
-                            validator: (v) => (v == null || v.length < 6)
-                                ? 'Password minimal 6 karakter'
+                            readOnly: true,
+                            validator: (value) => value!.isEmpty
+                                ? 'Tanggal lahir tidak boleh kosong'
                                 : null,
                           ),
+                          const SizedBox(height: 16),
+
+                          // 6. Gender
+                          DropdownButtonFormField<String>(
+                            value: _selectedGender,
+                            decoration: const InputDecoration(
+                              labelText: 'Gender',
+                              border: OutlineInputBorder(),
+                            ),
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'Laki-laki',
+                                child: Text('Laki-laki'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Perempuan',
+                                child: Text('Perempuan'),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedGender = value;
+                              });
+                            },
+                            validator: (value) =>
+                                value == null ? 'Pilih gender' : null,
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // 7. Role
+                          DropdownButtonFormField<String>(
+                            value: _selectedRole,
+                            decoration: const InputDecoration(
+                              labelText: 'Role',
+                              border: OutlineInputBorder(),
+                            ),
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'student',
+                                child: Text('Student'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'mentor',
+                                child: Text('Mentor'),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedRole = value;
+                              });
+                            },
+                            validator: (value) =>
+                                value == null ? 'Pilih role' : null,
+                          ),
+
                           const SizedBox(height: 24),
 
-                          // --- TOMBOL ACTION ---
-                          
-                          // Tampilkan Loading jika sedang proses
-                          provider.isLoading
-                              ? const Center(child: CircularProgressIndicator())
-                              : CommonButton(
-                                  label: 'Daftar',
-                                  onPressed: () async {
-                                    // Validasi Form
+                          // Tombol Registrasi
+                          CommonButton(
+                            label: provider.isLoading
+                                ? 'Mendaftarkan...'
+                                : 'Registrasi',
+                            onPressed: provider.isLoading
+                                ? null
+                                : () {
                                     if (_formKey.currentState!.validate()) {
-                                      final scaffoldMsg = ScaffoldMessenger.of(context);
-                                      final nav = Navigator.of(context);
-
-                                      // PERBAIKAN DISINI:
-                                      // Memanggil fungsi register dengan 6 Parameter Lengkap
-                                      await provider.register(
-                                        _nameController.text,           // 1. Nama
-                                        _emailController.text,          // 2. Email
-                                        _passwordController.text,       // 3. Password
-                                        _hpController.text,             // 4. No HP
-                                        _selectedGender!,               // 5. Gender
-                                        _tanggalLahirController.text,   // 6. Tgl Lahir
-                                      );
-
-                                      // Cek Hasil (Sukses / Gagal)
-                                      if (provider.failure != null) {
-                                        // Jika Gagal
-                                        scaffoldMsg.showSnackBar(
-                                          SnackBar(
-                                            content: Text(provider.failure!.message),
-                                            backgroundColor: Colors.red,
-                                          ),
-                                        );
-                                      } else if (provider.user != null) {
-                                        // Jika Sukses -> Pindah ke Dashboard
-                                        nav.pushReplacementNamed('/dashboard');
-                                      }
+                                      provider
+                                          .register(
+                                            _nameController.text, // 1. Nama
+                                            _emailController.text, // 2. Email
+                                            _passwordController
+                                                .text, // 3. Password
+                                            _hpController.text, // 4. No HP
+                                            _selectedGender!, // 5. Gender
+                                            _tanggalLahirController
+                                                .text, // 6. Tgl Lahir
+                                            _selectedRole!, // 7. Role
+                                          )
+                                          .then((success) {
+                                            // Cek Hasil (Sukses / Gagal)
+                                            if (success) {
+                                              // Jika Sukses -> Pindah ke Dashboard
+                                              Navigator.pushReplacementNamed(
+                                                context,
+                                                '/dashboard',
+                                              );
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                    'Registrasi berhasil!',
+                                                  ),
+                                                ),
+                                              );
+                                            } else {
+                                              // Jika Gagal
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    provider.errorMessage ??
+                                                        'Registrasi gagal',
+                                                  ),
+                                                  backgroundColor: Colors.red,
+                                                ),
+                                              );
+                                            }
+                                          });
                                     }
                                   },
-                                ),
-                          
+                          ),
+
                           const SizedBox(height: 16),
-                          
+
                           // Link Login
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -276,7 +325,9 @@ class _RegisterPageState extends State<RegisterPage> {
                               const Text('Sudah punya akun?'),
                               TextButton(
                                 onPressed: () {
-                                  Navigator.pop(context); // Balik ke halaman sebelumnya (Login)
+                                  Navigator.pop(
+                                    context,
+                                  ); // Balik ke halaman sebelumnya (Login)
                                 },
                                 child: const Text('Login'),
                               ),

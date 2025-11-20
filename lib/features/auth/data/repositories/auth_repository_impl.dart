@@ -20,6 +20,7 @@ class AuthRepositoryImpl implements AuthRepository {
         name: userModel.name,
         email: userModel.email,
         token: userModel.token,
+        role: userModel.role,
       );
     } on AuthException catch (e) {
       // Tangani error spesifik Supabase
@@ -36,9 +37,10 @@ class AuthRepositoryImpl implements AuthRepository {
     String name,
     String email,
     String password,
-    String noHp,
-    String jenisKelamin,
-    String tanggalLahir,
+    String phone,
+    String gender,
+    String birthDate,
+    String role,
   ) async {
     // --- GANTI MOCK DENGAN API CALL ---
     try {
@@ -46,9 +48,10 @@ class AuthRepositoryImpl implements AuthRepository {
         name,
         email,
         password,
-        noHp,
-        jenisKelamin,
-        tanggalLahir,
+        phone,
+        gender,
+        birthDate,
+        role,
       );
 
       // Konversi dari UserModel (Data) ke UserEntity (Domain)
@@ -57,6 +60,7 @@ class AuthRepositoryImpl implements AuthRepository {
         name: userModel.name,
         email: userModel.email,
         token: userModel.token,
+        role: userModel.role,
       );
     } on AuthException catch (e) {
       // Tangani error spesifik Supabase

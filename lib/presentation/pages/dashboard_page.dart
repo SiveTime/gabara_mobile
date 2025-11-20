@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../layout/student_app_drawer.dart';
+import '../layout/tutor_app_drawer.dart';
 import 'profile_page.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 // Import 'class_page.dart' nanti saat sudah dibuat
@@ -12,7 +13,10 @@ import '../../features/auth/presentation/providers/auth_provider.dart';
 const double containerPadding = 16.0;
 const double containerMargin = 16.0;
 const double borderRadius = 12.0;
-const BorderSide calendarBorderSide = BorderSide(color: Color.fromARGB(255, 224, 224, 224), width: 1.0);
+const BorderSide calendarBorderSide = BorderSide(
+  color: Color.fromARGB(255, 224, 224, 224),
+  width: 1.0,
+);
 
 // Enum untuk mengelola view kalender yang aktif
 enum CalendarView { monthly, weekly, daily }
@@ -31,7 +35,7 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<AuthProvider>(context);
-    
+
     // If user is not authenticated, redirect to login
     // Pengecekan ini penting jika user membuka app dan masih punya token,
     // tapi jika tokennya invalid atau sudah logout, ini akan redirect.
@@ -42,30 +46,23 @@ class _DashboardPageState extends State<DashboardPage> {
           Navigator.pushReplacementNamed(context, '/login');
         }
       });
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: Colors.white,
       // --- PERUBAHAN 1: Menggunakan StudentAppDrawer ---
-      drawer: const StudentAppDrawer(activeRoute: 'dashboard'),
+      drawer: provider.user?.role == 'mentor'
+          ? const TutorAppDrawer(activeRoute: 'dashboard')
+          : const StudentAppDrawer(activeRoute: 'dashboard'),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
-        title: Image.asset(
-          'assets/GabaraColor.png',
-          height: 30,
-        ),
+        title: Image.asset('assets/GabaraColor.png', height: 30),
         centerTitle: true,
-        actions: [
-          _buildProfilePopupMenu(),
-        ],
+        actions: [_buildProfilePopupMenu()],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -80,37 +77,60 @@ class _DashboardPageState extends State<DashboardPage> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: containerMargin),
               child: Row(
-                children: [
-                  Expanded(
-                    child: _buildSummaryCard(
-                      icon: Icons.book,
-                      title: 'Jumlah Kelas Diikuti',
-                      count: '1',
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildSummaryCard(
-                      icon: Icons.assignment_turned_in_outlined,
-                      title: 'Tugas Berjalan',
-                      count: '0',
-                    ),
-                  ),
-                ],
+                children: provider.user?.role == 'mentor'
+                    ? [
+                        Expanded(
+                          child: _buildSummaryCard(
+                            icon: Icons.class_,
+                            title: 'Kelas Dibuat',
+                            count: '1',
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildSummaryCard(
+                            icon: Icons.question_mark,
+                            title: 'Kuis Dibuat',
+                            count: '0',
+                          ),
+                        ),
+                      ]
+                    : [
+                        Expanded(
+                          child: _buildSummaryCard(
+                            icon: Icons.book,
+                            title: 'Jumlah Kelas Diikuti',
+                            count: '1',
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildSummaryCard(
+                            icon: Icons.assignment_turned_in_outlined,
+                            title: 'Tugas Berjalan',
+                            count: '0',
+                          ),
+                        ),
+                      ],
               ),
             ),
             const SizedBox(height: 16),
-            _buildSectionTitle('Pengumuman', padding: const EdgeInsets.symmetric(horizontal: containerMargin)),
-            _buildSectionWrapper(
-              child: _buildAnnouncementSection(),
+            _buildSectionTitle(
+              'Pengumuman',
+              padding: const EdgeInsets.symmetric(horizontal: containerMargin),
             ),
+            _buildSectionWrapper(child: _buildAnnouncementSection()),
             const SizedBox(height: 16),
-            _buildSectionTitle('Daftar Deadline Tugas/Quiz', padding: const EdgeInsets.symmetric(horizontal: containerMargin)),
-            _buildSectionWrapper(
-              child: _buildDeadlineSection(),
+            _buildSectionTitle(
+              'Daftar Deadline Tugas/Quiz',
+              padding: const EdgeInsets.symmetric(horizontal: containerMargin),
             ),
+            _buildSectionWrapper(child: _buildDeadlineSection()),
             const SizedBox(height: 16),
-            _buildSectionTitle('Kalender', padding: const EdgeInsets.symmetric(horizontal: containerMargin)),
+            _buildSectionTitle(
+              'Kalender',
+              padding: const EdgeInsets.symmetric(horizontal: containerMargin),
+            ),
             _buildSectionWrapper(
               padding: const EdgeInsets.all(0.0),
               child: _buildCalendarSection(context),
@@ -157,7 +177,10 @@ class _DashboardPageState extends State<DashboardPage> {
           child: ListTile(
             leading: CircleAvatar(
               backgroundColor: Colors.grey,
-              child: Text(user.name[0], style: const TextStyle(color: Colors.white)),
+              child: Text(
+                user.name[0],
+                style: const TextStyle(color: Colors.white),
+              ),
             ),
             title: Text(user.name),
           ),
@@ -172,10 +195,7 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
         const PopupMenuItem<String>(
           value: 'logout',
-          child: ListTile(
-            leading: Icon(Icons.logout),
-            title: Text('Keluar'),
-          ),
+          child: ListTile(leading: Icon(Icons.logout), title: Text('Keluar')),
         ),
       ],
     );
@@ -186,7 +206,9 @@ class _DashboardPageState extends State<DashboardPage> {
       padding: const EdgeInsets.symmetric(horizontal: containerMargin),
       child: Card(
         elevation: 1,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(borderRadius)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(borderRadius),
+        ),
         margin: EdgeInsets.zero,
         child: Padding(
           padding: padding ?? const EdgeInsets.all(containerPadding),
@@ -232,10 +254,16 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildSummaryCard({required IconData icon, required String title, required String count}) {
+  Widget _buildSummaryCard({
+    required IconData icon,
+    required String title,
+    required String count,
+  }) {
     return Card(
       elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(borderRadius)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(borderRadius),
+      ),
       margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(containerPadding),
@@ -275,14 +303,27 @@ class _DashboardPageState extends State<DashboardPage> {
           errorBuilder: (context, error, stackTrace) {
             return const SizedBox(
               height: 150,
-              child: Center(child: Icon(Icons.notifications_off, size: 60, color: Colors.grey)),
+              child: Center(
+                child: Icon(
+                  Icons.notifications_off,
+                  size: 60,
+                  color: Colors.grey,
+                ),
+              ),
             );
           },
         ),
         const SizedBox(height: 16),
-        const Text('Tidak ada pengumuman', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const Text(
+          'Tidak ada pengumuman',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 4),
-        const Text('Belum ada pengumuman yang tersedia.', style: TextStyle(color: Colors.black54), textAlign: TextAlign.center),
+        const Text(
+          'Belum ada pengumuman yang tersedia.',
+          style: TextStyle(color: Colors.black54),
+          textAlign: TextAlign.center,
+        ),
       ],
     );
   }
@@ -290,7 +331,10 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildDeadlineSection() {
     return const ListTile(
       contentPadding: EdgeInsets.zero,
-      title: Text('Tidak ada deadline mendatang.', style: TextStyle(color: Colors.black54)),
+      title: Text(
+        'Tidak ada deadline mendatang.',
+        style: TextStyle(color: Colors.black54),
+      ),
     );
   }
 
@@ -302,9 +346,18 @@ class _DashboardPageState extends State<DashboardPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              IconButton(icon: const Icon(Icons.arrow_back_ios, size: 18), onPressed: () {}),
-              const Text('Oktober 2025', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              IconButton(icon: const Icon(Icons.arrow_forward_ios, size: 18), onPressed: () {}),
+              IconButton(
+                icon: const Icon(Icons.arrow_back_ios, size: 18),
+                onPressed: () {},
+              ),
+              const Text(
+                'Oktober 2025',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              IconButton(
+                icon: const Icon(Icons.arrow_forward_ios, size: 18),
+                onPressed: () {},
+              ),
             ],
           ),
         ),
@@ -371,29 +424,73 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildMonthlyView() {
-    const List<String> dayHeaders = ['SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB', 'MIN'];
+    const List<String> dayHeaders = [
+      'SEN',
+      'SEL',
+      'RAB',
+      'KAM',
+      'JUM',
+      'SAB',
+      'MIN',
+    ];
     final Map<int, TableColumnWidth> columnWidthsMap = {
       for (int i = 0; i < dayHeaders.length; i++) i: const FlexColumnWidth(),
     };
     return Table(
       columnWidths: columnWidthsMap,
-      border: TableBorder.all(color: calendarBorderSide.color, width: calendarBorderSide.width),
+      border: TableBorder.all(
+        color: calendarBorderSide.color,
+        width: calendarBorderSide.width,
+      ),
       children: [
         _buildCalendarRow(dayHeaders, isHeader: true),
-        _buildCalendarRow(['29', '30', '1', '2', '3', '4', '5'], isCurrentMonth: false),
+        _buildCalendarRow([
+          '29',
+          '30',
+          '1',
+          '2',
+          '3',
+          '4',
+          '5',
+        ], isCurrentMonth: false),
         _buildCalendarRow(['6', '7', '8', '9', '10', '11', '12']),
-        _buildCalendarRow(['13', '14', '15', '16', '17', '18', '19'], highlightedDay: '15'),
+        _buildCalendarRow([
+          '13',
+          '14',
+          '15',
+          '16',
+          '17',
+          '18',
+          '19',
+        ], highlightedDay: '15'),
         _buildCalendarRow(['20', '21', '22', '23', '24', '25', '26']),
-        _buildCalendarRow(['27', '28', '29', '30', '31', '1', '2'], isNextMonth: true),
+        _buildCalendarRow([
+          '27',
+          '28',
+          '29',
+          '30',
+          '31',
+          '1',
+          '2',
+        ], isNextMonth: true),
       ],
     );
   }
 
-  TableRow _buildCalendarRow(List<String> days, {bool isHeader = false, String? highlightedDay, bool isCurrentMonth = true, bool isNextMonth = false}) {
+  TableRow _buildCalendarRow(
+    List<String> days, {
+    bool isHeader = false,
+    String? highlightedDay,
+    bool isCurrentMonth = true,
+    bool isNextMonth = false,
+  }) {
     return TableRow(
       children: days.map((day) {
-        bool isHighlighted = day == highlightedDay && isCurrentMonth && !isNextMonth;
-        Color textColor = isCurrentMonth && !isNextMonth ? Colors.black : Colors.grey.shade400;
+        bool isHighlighted =
+            day == highlightedDay && isCurrentMonth && !isNextMonth;
+        Color textColor = isCurrentMonth && !isNextMonth
+            ? Colors.black
+            : Colors.grey.shade400;
         if (isHeader) textColor = Colors.black54;
 
         return TableCell(
@@ -405,9 +502,23 @@ class _DashboardPageState extends State<DashboardPage> {
             child: Container(
               width: 30,
               height: 30,
-              decoration: isHighlighted ? BoxDecoration(color: accentBlue, borderRadius: BorderRadius.circular(8)) : null,
+              decoration: isHighlighted
+                  ? BoxDecoration(
+                      color: accentBlue,
+                      borderRadius: BorderRadius.circular(8),
+                    )
+                  : null,
               alignment: Alignment.center,
-              child: Text(day, style: TextStyle(fontSize: isHeader ? 11 : 16, fontWeight: isHighlighted ? FontWeight.bold : FontWeight.normal, color: isHighlighted ? Colors.white : textColor)),
+              child: Text(
+                day,
+                style: TextStyle(
+                  fontSize: isHeader ? 11 : 16,
+                  fontWeight: isHighlighted
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+                  color: isHighlighted ? Colors.white : textColor,
+                ),
+              ),
             ),
           ),
         );
@@ -416,27 +527,52 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildWeeklyView() {
-    const List<String> dayHeaders = ['SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB', 'MIN'];
+    const List<String> dayHeaders = [
+      'SEN',
+      'SEL',
+      'RAB',
+      'KAM',
+      'JUM',
+      'SAB',
+      'MIN',
+    ];
     const double timeColumnWidth = 50.0;
     const double hourRowHeight = 60.0;
-    final List<String> timeSlots = List.generate(13, (index) => '${(index + 8).toString().padLeft(2, '0')}:00');
-    
+    final List<String> timeSlots = List.generate(
+      13,
+      (index) => '${(index + 8).toString().padLeft(2, '0')}:00',
+    );
+
     return Column(
       children: [
         Row(
           children: [
             const SizedBox(width: timeColumnWidth),
-            ...dayHeaders.map((day) => Expanded(
-              child: Container(
-                height: 30,
-                alignment: Alignment.center,
-                child: Text(day, style: const TextStyle(fontSize: 11, color: Colors.black54, fontWeight: FontWeight.bold)),
+            ...dayHeaders.map(
+              (day) => Expanded(
+                child: Container(
+                  height: 30,
+                  alignment: Alignment.center,
+                  child: Text(
+                    day,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Colors.black54,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               ),
-            )),
+            ),
           ],
         ),
         Container(
-          decoration: BoxDecoration(border: Border.all(color: calendarBorderSide.color, width: calendarBorderSide.width)),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: calendarBorderSide.color,
+              width: calendarBorderSide.width,
+            ),
+          ),
           child: Column(
             children: timeSlots.map((time) {
               return Row(
@@ -446,19 +582,25 @@ class _DashboardPageState extends State<DashboardPage> {
                     height: hourRowHeight,
                     alignment: Alignment.topCenter,
                     padding: const EdgeInsets.only(top: 4),
-                    child: Text(time, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                    child: Text(
+                      time,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
                   ),
-                  ...List.generate(7, (index) => Expanded(
-                    child: Container(
-                      height: hourRowHeight,
-                      decoration: const BoxDecoration(
-                        border: Border(
-                          left: calendarBorderSide,
-                          top: calendarBorderSide,
-                        )
+                  ...List.generate(
+                    7,
+                    (index) => Expanded(
+                      child: Container(
+                        height: hourRowHeight,
+                        decoration: const BoxDecoration(
+                          border: Border(
+                            left: calendarBorderSide,
+                            top: calendarBorderSide,
+                          ),
+                        ),
                       ),
                     ),
-                  )),
+                  ),
                 ],
               );
             }).toList(),
@@ -471,17 +613,32 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildDailyView() {
     const double timeColumnWidth = 60.0;
     const double hourRowHeight = 80.0;
-    final List<String> timeSlots = List.generate(13, (index) => '${(index + 8).toString().padLeft(2, '0')}:00');
+    final List<String> timeSlots = List.generate(
+      13,
+      (index) => '${(index + 8).toString().padLeft(2, '0')}:00',
+    );
 
     return Column(
       children: [
         Container(
           height: 30,
           alignment: Alignment.center,
-          child: const Text("RABU", style: TextStyle(fontSize: 12, color: Colors.black54, fontWeight: FontWeight.bold)),
+          child: const Text(
+            "RABU",
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.black54,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
         Container(
-          decoration: BoxDecoration(border: Border.all(color: calendarBorderSide.color, width: calendarBorderSide.width)),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: calendarBorderSide.color,
+              width: calendarBorderSide.width,
+            ),
+          ),
           child: Column(
             children: timeSlots.map((time) {
               return Row(
@@ -491,19 +648,22 @@ class _DashboardPageState extends State<DashboardPage> {
                     height: hourRowHeight,
                     alignment: Alignment.topCenter,
                     padding: const EdgeInsets.only(top: 4),
-                    decoration: const BoxDecoration(border: Border(right: calendarBorderSide)),
-                    child: Text(time, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                    decoration: const BoxDecoration(
+                      border: Border(right: calendarBorderSide),
+                    ),
+                    child: Text(
+                      time,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
                   ),
                   Expanded(
                     child: Container(
                       height: hourRowHeight,
                       decoration: const BoxDecoration(
-                        border: Border(
-                          top: calendarBorderSide,
-                        )
+                        border: Border(top: calendarBorderSide),
                       ),
                     ),
-                  )
+                  ),
                 ],
               );
             }).toList(),

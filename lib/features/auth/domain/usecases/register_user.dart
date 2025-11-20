@@ -10,17 +10,11 @@ class RegisterUser {
     String name,
     String email,
     String password,
-    String noHp,
-    String jenisKelamin,
-    String tanggalLahir,
+    String phone,
+    String gender,
+    String birthDate,
+    String role,
   ) {
-    return repository.register(
-      name,
-      email,
-      password,
-      noHp,
-      jenisKelamin,
-      tanggalLahir,
-    );
+    return repository.register(name, email, password, phone, gender, birthDate, role);
   }
 }

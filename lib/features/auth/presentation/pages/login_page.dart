@@ -96,11 +96,14 @@ class _LoginPageState extends State<LoginPage> {
                                   labelText: 'Email',
                                   prefixIcon: Icon(Icons.email_outlined),
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(12)),
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(12),
+                                    ),
                                   ),
                                 ),
-                                validator: (v) =>
-                                    v!.isEmpty ? 'Email tidak boleh kosong' : null,
+                                validator: (v) => v!.isEmpty
+                                    ? 'Email tidak boleh kosong'
+                                    : null,
                                 keyboardType: TextInputType.emailAddress,
                               ),
                               const SizedBox(height: 16),
@@ -112,11 +115,15 @@ class _LoginPageState extends State<LoginPage> {
                                   labelText: 'Password',
                                   prefixIcon: const Icon(Icons.lock_outline),
                                   border: const OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(12)),
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(12),
+                                    ),
                                   ),
                                   suffixIcon: IconButton(
                                     icon: Icon(
-                                      _obscureText ? Icons.visibility_off : Icons.visibility,
+                                      _obscureText
+                                          ? Icons.visibility_off
+                                          : Icons.visibility,
                                     ),
                                     onPressed: () {
                                       setState(() {
@@ -125,8 +132,9 @@ class _LoginPageState extends State<LoginPage> {
                                     },
                                   ),
                                 ),
-                                validator: (v) =>
-                                    v!.isEmpty ? 'Password tidak boleh kosong' : null,
+                                validator: (v) => v!.isEmpty
+                                    ? 'Password tidak boleh kosong'
+                                    : null,
                               ),
                               const SizedBox(height: 8),
                               // Lupa Password
@@ -142,34 +150,76 @@ class _LoginPageState extends State<LoginPage> {
                               const SizedBox(height: 16),
                               // Tombol Login
                               provider.isLoading
-                                  ? const Center(child: CircularProgressIndicator())
-                                  : CommonButton(
-                                      label: 'Login',
+                                  ? const Center(
+                                      child: CircularProgressIndicator(),
+                                    )
+                                  : // Di dalam method build atau widget terpisah
+                                    CommonButton(
+                                      // Atau ElevatedButton
+                                      label: 'Masuk',
+                                      // ... di dalam onPressed tombol LOGIN
                                       onPressed: () async {
-                                        if (_formKey.currentState!.validate()) {
-                                          // PERBAIKAN 2: Simpan referensi context sebelum 'await'
-                                          final scaffoldMessenger = ScaffoldMessenger.of(context);
-                                          final navigator = Navigator.of(context);
+                                        // 1. Validasi Input dasar
+                                        final email = _emailController.text
+                                            .trim(); // Pastikan controller sudah didefinisikan
+                                        final password = _passwordController
+                                            .text
+                                            .trim();
 
-                                          await provider.login(
-                                            _emailController.text,
-                                            _passwordController.text,
-                                          );
-                                          // Cek 'mounted' tidak lagi diperlukan jika sdh disimpan
-                                          
-                                          if (provider.failure != null) {
-                                            scaffoldMessenger.showSnackBar( // Gunakan variabel
-                                              SnackBar(
-                                                content: Text(provider.failure!.message),
-                                                backgroundColor: Colors.red,
+                                        if (email.isEmpty || password.isEmpty) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                'Email dan password wajib diisi',
                                               ),
+                                            ),
+                                          );
+                                          return;
+                                        }
+
+                                        // 2. Panggil Provider Login
+                                        final authProvider =
+                                            Provider.of<AuthProvider>(
+                                              context,
+                                              listen: false,
                                             );
-                                          } else if (provider.user != null) {
-                                            navigator.pushReplacementNamed('/dashboard'); // Gunakan variabel
-                                          }
+
+                                        // Tampilkan loading (opsional, jika button support loading state)
+                                        // authProvider.setLoading(true);
+
+                                        final success = await authProvider
+                                            .login(email, password);
+
+                                        if (!context.mounted)
+                                          return; // Cek apakah widget masih aktif
+
+                                        if (success) {
+                                          // 3. Redirect ke Dashboard
+                                          // Karena AuthProvider sudah menyimpan data user & role,
+                                          // Dashboard nanti tinggal membacanya.
+                                          Navigator.pushReplacementNamed(
+                                            context,
+                                            '/dashboard',
+                                          );
+                                        } else {
+                                          // 4. Tampilkan Error
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                authProvider.errorMessage ??
+                                                    'Login gagal',
+                                              ),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
                                         }
                                       },
                                     ),
+                              // ... widget loading indicator jika authProvider.isLoading == true
                               const SizedBox(height: 16),
                               // Link ke Register
                               Row(

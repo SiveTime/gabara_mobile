@@ -6,8 +6,9 @@ abstract class AuthRepository {
     String name,
     String email,
     String password,
-    String noHp,
-    String jenisKelamin,
-    String tanggalLahir,
+    String phone,
+    String gender,
+    String birthDate,
+    String role,
   );
 }
