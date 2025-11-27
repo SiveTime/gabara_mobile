@@ -1,13 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../layout/student_app_drawer.dart';
 import '../dialogs/edit_profile_dialog.dart';
 import '../dialogs/change_password_dialog.dart';
+import '../../features/profile/presentation/providers/profile_provider.dart';
+import '../../features/auth/presentation/providers/auth_provider.dart';
 
 //==================================================================
 //== HALAMAN UTAMA PROFIL
 //==================================================================
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  @override
+  void initState() {
+    super.initState();
+    // Load profile saat page dibuka
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = context.read<AuthProvider>();
+      final profileProvider = context.read<ProfileProvider>();
+      
+      if (authProvider.user != null) {
+        profileProvider.fetchProfile(authProvider.user!.id);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +101,21 @@ class ProfilePage extends StatelessWidget {
   }
 
   Widget _buildProfileCard(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+    final profileProvider = context.watch<ProfileProvider>();
+    
+    if (profileProvider.isLoading) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(40.0),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+
+    final profile = profileProvider.profile;
+    final user = authProvider.user;
+    
     return Card(
       elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -86,15 +123,33 @@ class ProfilePage extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
         child: Column(
           children: [
-            const CircleAvatar(
+            CircleAvatar(
               radius: 40,
-              backgroundColor: Color(0xFFE0E0E0),
-              child: Text('MK', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF424242))),
+              backgroundColor: const Color(0xFFE0E0E0),
+              backgroundImage: profile?.avatarUrl != null 
+                ? NetworkImage(profile!.avatarUrl!) 
+                : null,
+              child: profile?.avatarUrl == null
+                ? Text(
+                    profile?.fullName.substring(0, 2).toUpperCase() ?? 'U',
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF424242),
+                    ),
+                  )
+                : null,
             ),
             const SizedBox(height: 16),
-            const Text('Melati Kusuma', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            Text(
+              profile?.fullName ?? 'Loading...',
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 4),
-            Text('student', style: TextStyle(fontSize: 16, color: Colors.grey[600])),
+            Text(
+              user?.role ?? 'student',
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+            ),
             const SizedBox(height: 24),
             OutlinedButton.icon(
               onPressed: () {
@@ -122,6 +177,11 @@ class ProfilePage extends StatelessWidget {
   }
 
   Widget _buildPersonalInfoCard() {
+    final authProvider = context.watch<AuthProvider>();
+    final profileProvider = context.watch<ProfileProvider>();
+    final profile = profileProvider.profile;
+    final userRole = authProvider.user?.role ?? 'student';
+    
     return Card(
       elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -132,12 +192,21 @@ class ProfilePage extends StatelessWidget {
           children: [
             const Text('Informasi Pribadi', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
-            _buildInfoRow('Nama Lengkap', 'Melati Kusuma'),
-            _buildInfoRow('Email', 'student4@example.com'),
-            _buildInfoRow('WhatsApp', '081234567897'),
-            _buildInfoRow('Alamat', '-'),
-            _buildInfoRow('Nama Orang Tua / Wali', '-'),
-            _buildInfoRow('Nomor HP Orang Tua / Wali', '-'),
+            _buildInfoRow('Nama Lengkap', profile?.fullName ?? '-'),
+            _buildInfoRow('Email', authProvider.user?.email ?? '-'),
+            _buildInfoRow('WhatsApp', profile?.phone ?? '-'),
+            _buildInfoRow('Gender', profile?.gender ?? '-'),
+            _buildInfoRow('Tanggal Lahir', profile?.birthDate ?? '-'),
+            
+            // Conditional: Student vs Mentor
+            if (userRole == 'student') ...[
+              _buildInfoRow('Alamat', profile?.address ?? '-'),
+              _buildInfoRow('Nama Orang Tua / Wali', profile?.parentName ?? '-'),
+              _buildInfoRow('Nomor HP Orang Tua / Wali', profile?.parentPhone ?? '-'),
+            ] else if (userRole == 'mentor' || userRole == 'admin') ...[
+              _buildInfoRow('Bidang Keilmuan', profile?.expertiseField ?? '-'),
+              _buildInfoRow('Pekerjaan', profile?.occupation ?? '-'),
+            ],
           ],
         ),
       ),

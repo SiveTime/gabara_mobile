@@ -13,6 +13,14 @@ import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/class/data/services/class_service.dart';
 import 'features/class/presentation/providers/class_provider.dart';
 
+// Import Layer Data, Domain, Presentation - PROFILE (BARU)
+import 'features/profile/data/services/profile_service.dart';
+import 'features/profile/data/repositories/profile_repository_impl.dart';
+import 'features/profile/domain/usecases/get_profile.dart';
+import 'features/profile/domain/usecases/update_profile.dart';
+import 'features/profile/domain/usecases/change_password.dart';
+import 'features/profile/presentation/providers/profile_provider.dart';
+
 // Import Pages
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/auth/presentation/pages/register_page.dart';
@@ -50,6 +58,13 @@ class MyApp extends StatelessWidget {
     // --- CLASS DEPENDENCIES (BARU) ---
     final classService = ClassService(supabaseClient);
 
+    // --- PROFILE DEPENDENCIES (BARU) ---
+    final profileService = ProfileService(supabaseClient);
+    final profileRepository = ProfileRepositoryImpl(profileService);
+    final getProfile = GetProfile(profileRepository);
+    final updateProfile = UpdateProfile(profileRepository);
+    final changePassword = ChangePassword(profileRepository);
+
     return MultiProvider(
       providers: [
         // Provider untuk Auth
@@ -63,6 +78,15 @@ class MyApp extends StatelessWidget {
         // Provider untuk Kelas (BARU)
         ChangeNotifierProvider(
           create: (_) => ClassProvider(classService),
+        ),
+
+        // Provider untuk Profile (BARU)
+        ChangeNotifierProvider(
+          create: (_) => ProfileProvider(
+            getProfileUseCase: getProfile,
+            updateProfileUseCase: updateProfile,
+            changePasswordUseCase: changePassword,
+          ),
         ),
       ],
       child: MaterialApp(
