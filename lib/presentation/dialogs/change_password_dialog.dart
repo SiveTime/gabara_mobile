@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../features/profile/presentation/providers/profile_provider.dart';
 
 // Diekstrak dari profile.dart
 class ChangePasswordDialog extends StatefulWidget {
@@ -9,17 +11,27 @@ class ChangePasswordDialog extends StatefulWidget {
 }
 
 class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
+  final _oldPasswordController = TextEditingController();
+  final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  
   bool _obscureOld = true;
   bool _obscureNew = true;
   bool _obscureConfirm = true;
 
-  Widget _buildPasswordField(String label, bool isObscure, VoidCallback onPressed) {
+  Widget _buildPasswordField(
+    String label,
+    TextEditingController controller,
+    bool isObscure,
+    VoidCallback onPressed,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         TextFormField(
+          controller: controller,
           obscureText: isObscure,
           decoration: InputDecoration(
             filled: true,
@@ -59,11 +71,11 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
                 ],
               ),
               const SizedBox(height: 20),
-              _buildPasswordField("Password Lama", _obscureOld, () => setState(() => _obscureOld = !_obscureOld)),
+              _buildPasswordField("Password Lama", _oldPasswordController, _obscureOld, () => setState(() => _obscureOld = !_obscureOld)),
               const SizedBox(height: 16),
-              _buildPasswordField("Password Baru", _obscureNew, () => setState(() => _obscureNew = !_obscureNew)),
+              _buildPasswordField("Password Baru", _newPasswordController, _obscureNew, () => setState(() => _obscureNew = !_obscureNew)),
               const SizedBox(height: 16),
-              _buildPasswordField("Konfirmasi Password Baru", _obscureConfirm, () => setState(() => _obscureConfirm = !_obscureConfirm)),
+              _buildPasswordField("Konfirmasi Password Baru", _confirmPasswordController, _obscureConfirm, () => setState(() => _obscureConfirm = !_obscureConfirm)),
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -75,15 +87,68 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
                   ),
                   const SizedBox(width: 10),
                   ElevatedButton(
-                    onPressed: () {
-                      // Logika simpan password
-                      Navigator.of(context).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Password berhasil diubah"),
-                          backgroundColor: Colors.green,
-                        ),
+                    onPressed: () async {
+                      // Validasi input
+                      if (_oldPasswordController.text.isEmpty ||
+                          _newPasswordController.text.isEmpty ||
+                          _confirmPasswordController.text.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Semua field harus diisi'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+
+                      if (_newPasswordController.text.length < 6) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Password baru minimal 6 karakter'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+
+                      if (_newPasswordController.text != _confirmPasswordController.text) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Password baru tidak cocok'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+
+                      // Ubah password
+                      final profileProvider = context.read<ProfileProvider>();
+                      
+                      final success = await profileProvider.changePassword(
+                        _oldPasswordController.text,
+                        _newPasswordController.text,
                       );
+
+                      if (!context.mounted) return;
+
+                      if (success) {
+                        Navigator.of(context).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Password berhasil diubah"),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              profileProvider.errorMessage ?? 'Gagal mengubah password',
+                            ),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
                     },
                     child: const Text("Simpan"),
                   ),

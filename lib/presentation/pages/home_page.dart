@@ -274,7 +274,7 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(height: 24),
           _buildTestimonialCard(
-            imagePath: 'assets/Ari_Lesmana.jpg',
+            imagePath: 'assets/ari_lesmana.jpg',
             quote: '"Waktu SMP saya terpaksa berhenti sekolah... Sekarang saya kembali punya harapan untuk lulus Paket C."',
             name: 'Ari Lesmana',
           ),

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../features/profile/presentation/providers/profile_provider.dart';
+import '../../features/auth/presentation/providers/auth_provider.dart';
 
 // Diekstrak dari profile.dart
 class EditProfileDialog extends StatefulWidget {
@@ -9,15 +12,52 @@ class EditProfileDialog extends StatefulWidget {
 }
 
 class _EditProfileDialogState extends State<EditProfileDialog> {
-  final _namaController = TextEditingController(text: 'Melati Kusuma');
-  final _whatsappController = TextEditingController(text: '081234567897');
-  final _tanggalLahirController = TextEditingController(text: '2000-01-01');
-  final _emailController = TextEditingController(text: 'student4@example.com');
+  final _namaController = TextEditingController();
+  final _whatsappController = TextEditingController();
+  final _tanggalLahirController = TextEditingController();
+  final _emailController = TextEditingController();
+  
+  // Student fields
   final _namaWaliController = TextEditingController();
   final _nomorWaliController = TextEditingController();
   final _alamatController = TextEditingController();
+  
+  // Mentor fields
+  final _bidangKeilmuanController = TextEditingController();
+  final _pekerjaanController = TextEditingController();
 
-  String? _selectedGender = 'Perempuan';
+  String? _selectedGender;
+
+  @override
+  void initState() {
+    super.initState();
+    // Load data dari provider
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final profileProvider = context.read<ProfileProvider>();
+      final authProvider = context.read<AuthProvider>();
+      final profile = profileProvider.profile;
+      
+      if (profile != null) {
+        _namaController.text = profile.fullName;
+        _whatsappController.text = profile.phone ?? '';
+        _tanggalLahirController.text = profile.birthDate ?? '';
+        _emailController.text = authProvider.user?.email ?? '';
+        
+        // Student fields
+        _namaWaliController.text = profile.parentName ?? '';
+        _nomorWaliController.text = profile.parentPhone ?? '';
+        _alamatController.text = profile.address ?? '';
+        
+        // Mentor fields
+        _bidangKeilmuanController.text = profile.expertiseField ?? '';
+        _pekerjaanController.text = profile.occupation ?? '';
+        
+        setState(() {
+          _selectedGender = profile.gender;
+        });
+      }
+    });
+  }
 
   Widget _buildLabel(String text) {
     return Padding(
@@ -142,14 +182,43 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                 ),
               ),
               const SizedBox(height: 16),
-              _buildLabel("Nama Orang Tua / Wali"),
-              _buildTextField(_namaWaliController, hint: "Nama lengkap orang tua atau wali"),
-              const SizedBox(height: 16),
-              _buildLabel("Nomor HP Orang Tua / Wali"),
-              _buildTextField(_nomorWaliController, hint: "Nomor HP orang tua atau wali", keyboardType: TextInputType.phone),
-              const SizedBox(height: 16),
-              _buildLabel("Alamat"),
-              _buildTextField(_alamatController, hint: "Masukkan alamat lengkap sesuai domisili", maxLines: 3),
+              
+              // Conditional fields based on role
+              Builder(
+                builder: (context) {
+                  final authProvider = context.read<AuthProvider>();
+                  final userRole = authProvider.user?.role ?? 'student';
+                  
+                  if (userRole == 'student') {
+                    // Student fields
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildLabel("Alamat"),
+                        _buildTextField(_alamatController, hint: "Masukkan alamat lengkap sesuai domisili", maxLines: 3),
+                        const SizedBox(height: 16),
+                        _buildLabel("Nama Orang Tua / Wali"),
+                        _buildTextField(_namaWaliController, hint: "Nama lengkap orang tua atau wali"),
+                        const SizedBox(height: 16),
+                        _buildLabel("Nomor HP Orang Tua / Wali"),
+                        _buildTextField(_nomorWaliController, hint: "Nomor HP orang tua atau wali", keyboardType: TextInputType.phone),
+                      ],
+                    );
+                  } else {
+                    // Mentor/Admin fields
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildLabel("Bidang Keilmuan"),
+                        _buildTextField(_bidangKeilmuanController, hint: "Contoh: Matematika, Fisika, Bahasa Indonesia"),
+                        const SizedBox(height: 16),
+                        _buildLabel("Pekerjaan"),
+                        _buildTextField(_pekerjaanController, hint: "Contoh: Guru, Dosen, Profesional"),
+                      ],
+                    );
+                  }
+                },
+              ),
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -161,15 +230,66 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                   ),
                   const SizedBox(width: 10),
                   ElevatedButton(
-                    onPressed: () {
-                      // Logika simpan profil
-                      Navigator.of(context).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          backgroundColor: Colors.green,
-                          content: Text("Profil berhasil diperbarui"),
-                        ),
+                    onPressed: () async {
+                      // Validasi input
+                      if (_namaController.text.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Nama tidak boleh kosong'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+
+                      // Simpan profil
+                      final profileProvider = context.read<ProfileProvider>();
+                      final authProvider = context.read<AuthProvider>();
+                      final userRole = authProvider.user?.role ?? 'student';
+                      
+                      // Base data
+                      final data = {
+                        'full_name': _namaController.text,
+                        'phone': _whatsappController.text,
+                        'gender': _selectedGender,
+                        'birth_date': _tanggalLahirController.text,
+                      };
+                      
+                      // Conditional data based on role
+                      if (userRole == 'student') {
+                        data['address'] = _alamatController.text;
+                        data['parent_name'] = _namaWaliController.text;
+                        data['parent_phone'] = _nomorWaliController.text;
+                      } else {
+                        data['expertise_field'] = _bidangKeilmuanController.text;
+                        data['occupation'] = _pekerjaanController.text;
+                      }
+
+                      final success = await profileProvider.updateProfile(
+                        authProvider.user!.id,
+                        data,
                       );
+
+                      if (!context.mounted) return;
+
+                      if (success) {
+                        Navigator.of(context).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            backgroundColor: Colors.green,
+                            content: Text("Profil berhasil diperbarui"),
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              profileProvider.errorMessage ?? 'Gagal memperbarui profil',
+                            ),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
                     },
                     child: const Text("Simpan Perubahan"),
                   ),
