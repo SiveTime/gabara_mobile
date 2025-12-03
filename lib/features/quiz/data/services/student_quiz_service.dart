@@ -1,10 +1,11 @@
 // lib/features/quiz/data/services/student_quiz_service.dart
-// Requirements: 8.1, 8.2, 8.3, 8.4, 8.5
+// Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 13.1-13.5
 
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/quiz_attempt_model.dart';
 import '../models/quiz_model.dart';
+import '../../../grades/data/services/grades_service.dart';
 
 class StudentQuizService {
   final SupabaseClient supabaseClient;
@@ -158,6 +159,26 @@ class StudentQuizService {
             'percentage': percentage,
           })
           .eq('id', attemptId);
+
+      // Sync grade to grades table
+      // **Validates: Requirements 13.1-13.5**
+      if (quiz.classId != null) {
+        try {
+          final gradesService = GradesService(supabaseClient);
+          await gradesService.syncGradeFromQuiz(
+            studentId: user.id,
+            classId: quiz.classId!,
+            quizId: quiz.id,
+            score: correctCount.toDouble(),
+            maxScore: quiz.questionCount.toDouble(),
+            quizTitle: quiz.title,
+          );
+          debugPrint('Grade synced for quiz: ${quiz.title}');
+        } catch (gradeError) {
+          // Log error but don't fail the quiz submission
+          debugPrint('Error syncing grade: $gradeError');
+        }
+      }
 
       // Fetch and return updated attempt
       return await fetchAttemptById(attemptId);

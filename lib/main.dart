@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 // Import Layer Data, Domain, Presentation - AUTH
 import 'features/auth/data/services/auth_service.dart';
@@ -33,6 +34,24 @@ import 'features/profile/domain/usecases/update_profile.dart';
 import 'features/profile/domain/usecases/change_password.dart';
 import 'features/profile/presentation/providers/profile_provider.dart';
 
+// Import Layer Data, Domain, Presentation - MEETINGS
+import 'features/meetings/data/services/meeting_service.dart';
+import 'features/meetings/presentation/providers/meeting_provider.dart';
+import 'features/meetings/presentation/pages/meeting_list_page.dart';
+import 'features/meetings/presentation/pages/create_meeting_page.dart';
+import 'features/meetings/presentation/pages/meeting_detail_page.dart';
+
+// Import Layer Data, Domain, Presentation - ASSIGNMENTS
+import 'features/assignments/data/services/assignment_service.dart';
+import 'features/assignments/presentation/providers/assignment_provider.dart';
+import 'features/assignments/presentation/pages/assignment_list_page.dart';
+import 'features/assignments/presentation/pages/create_assignment_page.dart';
+import 'features/assignments/presentation/pages/assignment_detail_page.dart';
+import 'features/assignments/presentation/pages/submission_detail_page.dart';
+
+// Import Layer Data, Domain, Presentation - STUDENT
+import 'features/student/presentation/providers/student_provider.dart';
+
 // Import Pages
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/auth/presentation/pages/register_page.dart';
@@ -48,6 +67,9 @@ import 'features/class/presentation/pages/edit_class_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize date formatting for Indonesian locale
+  await initializeDateFormatting('id_ID', null);
 
   await Supabase.initialize(
     url: 'https://srofknwnftewlyrarnru.supabase.co',
@@ -85,6 +107,12 @@ class MyApp extends StatelessWidget {
     final updateProfile = UpdateProfile(profileRepository);
     final changePassword = ChangePassword(profileRepository);
 
+    // --- MEETING DEPENDENCIES ---
+    final meetingService = MeetingService(supabaseClient);
+
+    // --- ASSIGNMENT DEPENDENCIES ---
+    final assignmentService = AssignmentService(supabaseClient);
+
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
@@ -103,6 +131,15 @@ class MyApp extends StatelessWidget {
             changePasswordUseCase: changePassword,
           ),
         ),
+        ChangeNotifierProvider(
+          create: (_) => MeetingProvider(meetingService),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => AssignmentProvider(assignmentService),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => StudentProvider(meetingService, assignmentService),
+        ),
       ],
       child: MaterialApp(
         title: 'Gabara Mobile',
@@ -120,6 +157,12 @@ class MyApp extends StatelessWidget {
           '/create-class': (context) => const CreateClassPage(),
           '/quiz': (context) => const QuizListPage(),
           '/quiz/create': (context) => const QuizBuilderPage(),
+          // Meeting routes
+          '/meetings': (context) => const MeetingListPage(),
+          '/meetings/create': (context) => const CreateMeetingPage(),
+          // Assignment routes
+          '/assignments': (context) => const AssignmentListPage(),
+          '/assignments/create': (context) => const CreateAssignmentPage(),
         },
         // Menggunakan onGenerateRoute untuk passing arguments
         onGenerateRoute: (settings) {
@@ -154,6 +197,28 @@ class MyApp extends StatelessWidget {
             return MaterialPageRoute(
               builder: (context) => StudentQuizResultPage(
                 attemptId: args['attemptId'] as String?,
+              ),
+            );
+          }
+          // Meeting routes
+          if (settings.name == '/meetings/detail') {
+            final meetingId = settings.arguments as String;
+            return MaterialPageRoute(
+              builder: (context) => MeetingDetailPage(meetingId: meetingId),
+            );
+          }
+          // Assignment routes
+          if (settings.name == '/assignments/detail') {
+            final assignmentId = settings.arguments as String;
+            return MaterialPageRoute(
+              builder: (context) => AssignmentDetailPage(assignmentId: assignmentId),
+            );
+          }
+          if (settings.name == '/assignments/submission') {
+            final submissionId = settings.arguments as String;
+            return MaterialPageRoute(
+              builder: (context) => SubmissionDetailPage(
+                submissionId: submissionId,
               ),
             );
           }

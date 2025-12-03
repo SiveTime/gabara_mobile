@@ -91,7 +91,8 @@ class _MentorDashboardPageState extends State<MentorDashboardPage> {
                       child: _buildSummaryCard(
                         icon: Icons.quiz_outlined,
                         title: 'Kuis Dibuat',
-                        count: '0', // TODO: Implementasi nanti
+                        count: '0',
+                        onTap: () => Navigator.pushNamed(context, '/quiz'),
                       ),
                     ),
                   ],
@@ -108,15 +109,17 @@ class _MentorDashboardPageState extends State<MentorDashboardPage> {
                       child: _buildSummaryCard(
                         icon: Icons.assignment_outlined,
                         title: 'Tugas Dibuat',
-                        count: '0', // TODO: Implementasi nanti
+                        count: '0',
+                        onTap: () => Navigator.pushNamed(context, '/assignments'),
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: _buildSummaryCard(
-                        icon: Icons.people_outline,
-                        title: 'Total Siswa',
-                        count: '0', // TODO: Implementasi nanti
+                        icon: Icons.video_call_outlined,
+                        title: 'Pertemuan',
+                        count: '0',
+                        onTap: () => Navigator.pushNamed(context, '/meetings'),
                       ),
                     ),
                   ],
