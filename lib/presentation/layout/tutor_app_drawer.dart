@@ -3,6 +3,8 @@ import '../../core/constants/app_colors.dart';
 import '../pages/mentor_dashboard_page.dart';
 import '../../features/class/presentation/pages/class_page.dart';
 import '../../features/quiz/presentation/pages/quiz_list_page.dart';
+import '../../features/meetings/presentation/pages/meeting_list_page.dart';
+import '../../features/assignments/presentation/pages/assignment_list_page.dart';
 
 class TutorAppDrawer extends StatelessWidget {
   final String? activeRoute;
@@ -100,16 +102,24 @@ class TutorAppDrawer extends StatelessWidget {
                     context: context,
                     icon: Icons.assignment_outlined,
                     title: 'Tugas',
-                    routeKey: 'tugas',
-                    onTap: () {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Fitur Tugas akan segera hadir'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    },
+                    routeKey: 'assignments',
+                    onTap: () => _navigateTo(
+                      context,
+                      'assignments',
+                      const AssignmentListPage(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildDrawerItem(
+                    context: context,
+                    icon: Icons.video_call_outlined,
+                    title: 'Pertemuan',
+                    routeKey: 'meetings',
+                    onTap: () => _navigateTo(
+                      context,
+                      'meetings',
+                      const MeetingListPage(),
+                    ),
                   ),
                 ],
               ),
