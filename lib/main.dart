@@ -52,6 +52,16 @@ import 'features/assignments/presentation/pages/submission_detail_page.dart';
 // Import Layer Data, Domain, Presentation - STUDENT
 import 'features/student/presentation/providers/student_provider.dart';
 
+// Import Layer Data, Domain, Presentation - DISCUSSIONS
+import 'features/discussions/data/services/discussion_service.dart';
+import 'features/discussions/data/services/discussion_cache_service.dart';
+import 'features/discussions/presentation/providers/discussion_provider.dart';
+import 'features/discussions/presentation/pages/discussion_detail_page.dart';
+import 'features/discussions/presentation/pages/create_discussion_page.dart';
+
+// Import Core Services
+import 'core/services/connectivity_service.dart';
+
 // Import Pages
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/auth/presentation/pages/register_page.dart';
@@ -113,6 +123,11 @@ class MyApp extends StatelessWidget {
     // --- ASSIGNMENT DEPENDENCIES ---
     final assignmentService = AssignmentService(supabaseClient);
 
+    // --- DISCUSSION DEPENDENCIES ---
+    final discussionService = DiscussionService(supabaseClient);
+    final discussionCacheService = DiscussionCacheService();
+    final connectivityService = ConnectivityService();
+
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
@@ -131,14 +146,19 @@ class MyApp extends StatelessWidget {
             changePasswordUseCase: changePassword,
           ),
         ),
-        ChangeNotifierProvider(
-          create: (_) => MeetingProvider(meetingService),
-        ),
+        ChangeNotifierProvider(create: (_) => MeetingProvider(meetingService)),
         ChangeNotifierProvider(
           create: (_) => AssignmentProvider(assignmentService),
         ),
         ChangeNotifierProvider(
           create: (_) => StudentProvider(meetingService, assignmentService),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => DiscussionProvider(
+            discussionService,
+            discussionCacheService,
+            connectivityService,
+          ),
         ),
       ],
       child: MaterialApp(
@@ -211,14 +231,33 @@ class MyApp extends StatelessWidget {
           if (settings.name == '/assignments/detail') {
             final assignmentId = settings.arguments as String;
             return MaterialPageRoute(
-              builder: (context) => AssignmentDetailPage(assignmentId: assignmentId),
+              builder: (context) =>
+                  AssignmentDetailPage(assignmentId: assignmentId),
             );
           }
           if (settings.name == '/assignments/submission') {
             final submissionId = settings.arguments as String;
             return MaterialPageRoute(
-              builder: (context) => SubmissionDetailPage(
-                submissionId: submissionId,
+              builder: (context) =>
+                  SubmissionDetailPage(submissionId: submissionId),
+            );
+          }
+          // Discussion routes
+          if (settings.name == '/discussions/detail') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => DiscussionDetailPage(
+                discussionId: args['discussionId'] as String,
+                isMentor: args['isMentor'] as bool? ?? false,
+              ),
+            );
+          }
+          if (settings.name == '/discussions/create') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => CreateDiscussionPage(
+                classId: args['classId'] as String,
+                className: args['className'] as String,
               ),
             );
           }

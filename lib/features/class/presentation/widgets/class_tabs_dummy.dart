@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'class_quiz_list.dart';
 import 'class_meetings_list.dart';
+import '../../../discussions/presentation/pages/discussion_list_page.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../class/presentation/providers/class_provider.dart';
 
 // =================================================================
 // TAB 1: KURSUS (QUIZ + MATERI & PERTEMUAN)
@@ -97,7 +101,7 @@ class ClassParticipantsTab extends StatelessWidget {
 }
 
 // =================================================================
-// TAB 3: DISKUSI - Empty State
+// TAB 3: DISKUSI - Integrated with DiscussionListPage
 // =================================================================
 class ClassDiscussionTab extends StatelessWidget {
   final String? classId;
@@ -106,23 +110,47 @@ class ClassDiscussionTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.forum_outlined, size: 80, color: Colors.grey.shade300),
-          const SizedBox(height: 16),
-          const Text(
-            "Forum Diskusi",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            "Belum ada diskusi yang dimulai.",
-            style: TextStyle(color: Colors.grey),
-          ),
-        ],
-      ),
+    if (classId == null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.forum_outlined, size: 80, color: Colors.grey.shade300),
+            const SizedBox(height: 16),
+            const Text(
+              "Forum Diskusi",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              "Belum ada diskusi yang dimulai.",
+              style: TextStyle(color: Colors.grey),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Get user role and class name
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final classProvider = Provider.of<ClassProvider>(context, listen: false);
+    final isMentor = authProvider.user?.role == 'mentor';
+
+    // Find class name from provider
+    String className = 'Kelas';
+    try {
+      final classEntity = classProvider.classes.firstWhere(
+        (c) => c.id == classId,
+      );
+      className = classEntity.name;
+    } catch (_) {
+      // Class not found in list, use default
+    }
+
+    return DiscussionListPage(
+      classId: classId!,
+      className: className,
+      isMentor: isMentor,
     );
   }
 }
