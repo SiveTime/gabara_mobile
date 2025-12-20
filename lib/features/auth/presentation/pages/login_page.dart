@@ -142,7 +142,10 @@ class _LoginPageState extends State<LoginPage> {
                                 alignment: Alignment.centerRight,
                                 child: TextButton(
                                   onPressed: () {
-                                    // TODO: Implementasi lupa password
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/forgot-password',
+                                    );
                                   },
                                   child: const Text('Lupa Password?'),
                                 ),
@@ -198,9 +201,11 @@ class _LoginPageState extends State<LoginPage> {
 
                                         if (success) {
                                           // 3. Redirect ke Dashboard sesuai role
-                                          final userRole = authProvider.user?.role ?? 'student';
+                                          final userRole =
+                                              authProvider.user?.role ??
+                                              'student';
                                           String route = '/dashboard';
-                                          
+
                                           if (userRole == 'admin') {
                                             route = '/admin-dashboard';
                                           } else if (userRole == 'mentor') {
@@ -208,8 +213,11 @@ class _LoginPageState extends State<LoginPage> {
                                           } else {
                                             route = '/student-dashboard';
                                           }
-                                          
-                                          Navigator.pushReplacementNamed(context, route);
+
+                                          Navigator.pushReplacementNamed(
+                                            context,
+                                            route,
+                                          );
                                         } else {
                                           // 4. Tampilkan Error
                                           ScaffoldMessenger.of(

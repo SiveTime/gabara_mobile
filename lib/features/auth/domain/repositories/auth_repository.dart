@@ -11,4 +11,6 @@ abstract class AuthRepository {
     String birthDate,
     String role,
   );
+  Future<void> sendPasswordResetEmail(String email);
+  Future<void> resetPassword(String accessToken, String newPassword);
 }

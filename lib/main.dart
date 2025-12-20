@@ -8,6 +8,8 @@ import 'features/auth/data/services/auth_service.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/domain/usecases/login_user.dart';
 import 'features/auth/domain/usecases/register_user.dart';
+import 'features/auth/domain/usecases/forgot_password.dart';
+import 'features/auth/domain/usecases/reset_password.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 
 // Import Layer Data, Domain, Presentation - CLASS
@@ -59,13 +61,20 @@ import 'features/discussions/presentation/providers/discussion_provider.dart';
 import 'features/discussions/presentation/pages/discussion_detail_page.dart';
 import 'features/discussions/presentation/pages/create_discussion_page.dart';
 
+// Import Layer Data, Domain, Presentation - GRADES
+import 'features/grades/data/services/grades_service.dart';
+import 'features/grades/presentation/providers/grades_provider.dart';
+import 'features/grades/presentation/pages/student_grades_page.dart';
+import 'features/grades/presentation/pages/grades_analytics_page.dart';
+
 // Import Core Services
 import 'core/services/connectivity_service.dart';
 
 // Import Pages
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/auth/presentation/pages/register_page.dart';
-import 'presentation/pages/dashboard_page.dart';
+import 'features/auth/presentation/pages/forgot_password_page.dart';
+import 'features/auth/presentation/pages/reset_password_page.dart';
 import 'presentation/pages/student_dashboard_page.dart';
 import 'presentation/pages/mentor_dashboard_page.dart';
 import 'presentation/pages/admin_dashboard_page.dart';
@@ -74,6 +83,7 @@ import 'features/class/presentation/pages/class_page.dart';
 import 'features/class/presentation/pages/create_class_page.dart';
 import 'features/class/presentation/pages/class_detail_page.dart';
 import 'features/class/presentation/pages/edit_class_page.dart';
+import 'features/class/presentation/pages/class_members_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -102,6 +112,8 @@ class MyApp extends StatelessWidget {
     final authRepository = AuthRepositoryImpl(authService);
     final loginUser = LoginUser(authRepository);
     final registerUser = RegisterUser(authRepository);
+    final forgotPassword = ForgotPassword(authRepository);
+    final resetPassword = ResetPassword(authRepository);
 
     // --- CLASS DEPENDENCIES ---
     final classService = ClassService(supabaseClient);
@@ -128,11 +140,18 @@ class MyApp extends StatelessWidget {
     final discussionCacheService = DiscussionCacheService();
     final connectivityService = ConnectivityService();
 
+    // --- GRADES DEPENDENCIES ---
+    final gradesService = GradesService(supabaseClient);
+
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (_) =>
-              AuthProvider(loginUser: loginUser, registerUser: registerUser),
+          create: (_) => AuthProvider(
+            loginUser: loginUser,
+            registerUser: registerUser,
+            forgotPassword: forgotPassword,
+            resetPassword: resetPassword,
+          ),
         ),
         ChangeNotifierProvider(create: (_) => ClassProvider(classService)),
         ChangeNotifierProvider(create: (_) => QuizProvider(quizService)),
@@ -160,6 +179,7 @@ class MyApp extends StatelessWidget {
             connectivityService,
           ),
         ),
+        ChangeNotifierProvider(create: (_) => GradesProvider(gradesService)),
       ],
       child: MaterialApp(
         title: 'Gabara Mobile',
@@ -169,7 +189,8 @@ class MyApp extends StatelessWidget {
           '/': (context) => const HomePage(),
           '/login': (context) => const LoginPage(),
           '/register': (context) => const RegisterPage(),
-          '/dashboard': (context) => const DashboardPage(),
+          '/forgot-password': (context) => const ForgotPasswordPage(),
+          '/reset-password': (context) => const ResetPasswordPage(),
           '/student-dashboard': (context) => const StudentDashboardPage(),
           '/mentor-dashboard': (context) => const MentorDashboardPage(),
           '/admin-dashboard': (context) => const AdminDashboardPage(),
@@ -183,6 +204,9 @@ class MyApp extends StatelessWidget {
           // Assignment routes
           '/assignments': (context) => const AssignmentListPage(),
           '/assignments/create': (context) => const CreateAssignmentPage(),
+          // Grades routes
+          '/grades': (context) => const StudentGradesPage(),
+          '/grades/analytics': (context) => const GradesAnalyticsPage(),
         },
         // Menggunakan onGenerateRoute untuk passing arguments
         onGenerateRoute: (settings) {
@@ -256,6 +280,23 @@ class MyApp extends StatelessWidget {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
               builder: (context) => CreateDiscussionPage(
+                classId: args['classId'] as String,
+                className: args['className'] as String,
+              ),
+            );
+          }
+          // Reset password with token
+          if (settings.name == '/reset-password') {
+            final accessToken = settings.arguments as String?;
+            return MaterialPageRoute(
+              builder: (context) => ResetPasswordPage(accessToken: accessToken),
+            );
+          }
+          // Class members route
+          if (settings.name == '/class/members') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => ClassMembersPage(
                 classId: args['classId'] as String,
                 className: args['className'] as String,
               ),

@@ -108,4 +108,42 @@ class AuthService {
   User? getCurrentUser() {
     return supabaseClient.auth.currentUser;
   }
+
+  // Forgot Password - Send reset email
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await supabaseClient.auth.resetPasswordForEmail(
+        email,
+        redirectTo: 'https://srofknwnftewlyrarnru.supabase.co/auth/v1/verify',
+      );
+    } catch (e) {
+      throw Exception('Gagal mengirim email reset password: $e');
+    }
+  }
+
+  // Reset Password - Update password with new one
+  Future<void> updatePassword(String newPassword) async {
+    try {
+      await supabaseClient.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+    } catch (e) {
+      throw Exception('Gagal mengubah password: $e');
+    }
+  }
+
+  // Verify reset token and update password
+  Future<void> resetPassword(String accessToken, String newPassword) async {
+    try {
+      // Set session with the access token from reset link
+      await supabaseClient.auth.setSession(accessToken);
+
+      // Update password
+      await supabaseClient.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+    } catch (e) {
+      throw Exception('Gagal reset password: $e');
+    }
+  }
 }

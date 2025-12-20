@@ -112,21 +112,29 @@ class StudentQuizService {
         final selectedOptionId = answers[question.id];
         bool? isCorrect;
 
-        if (selectedOptionId != null) {
-          // Find if selected option is correct
+        if (selectedOptionId != null && selectedOptionId.isNotEmpty) {
+          // Validasi: Option harus ada di question
           try {
             final selectedOption = question.options.firstWhere(
               (o) => o.id == selectedOptionId,
             );
+            // Option valid, check if correct
             isCorrect = selectedOption.isCorrect;
             if (isCorrect) correctCount++;
+            debugPrint(
+              'Question ${question.id}: Selected option $selectedOptionId is ${isCorrect ? 'CORRECT' : 'INCORRECT'}',
+            );
           } catch (e) {
-            // Option not found, mark as incorrect
+            // Option tidak valid, mark as incorrect
             isCorrect = false;
             debugPrint(
-              'Option not found for question ${question.id}: $selectedOptionId',
+              'INVALID OPTION: Question ${question.id} has invalid option $selectedOptionId',
             );
           }
+        } else {
+          // Tidak ada jawaban
+          isCorrect = null;
+          debugPrint('Question ${question.id}: No answer provided');
         }
 
         answerRecords.add({

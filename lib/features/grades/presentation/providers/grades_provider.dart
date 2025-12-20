@@ -1,10 +1,9 @@
 // lib/features/grades/presentation/providers/grades_provider.dart
-// Requirements: 13.1-13.5, 14.1-14.5
+// Updated to work with new GradesService
 
 import 'package:flutter/material.dart';
-import '../../data/models/grade_model.dart';
 import '../../data/services/grades_service.dart';
-import '../../domain/entities/grade_entity.dart';
+import '../../data/models/grade_model.dart';
 
 class GradesProvider extends ChangeNotifier {
   final GradesService gradesService;
@@ -12,185 +11,70 @@ class GradesProvider extends ChangeNotifier {
   GradesProvider(this.gradesService);
 
   // State variables
-  List<GradeModel> _grades = [];
-  Map<String, List<GradeModel>> _gradesByClass = {};
-  List<Map<String, dynamic>> _studentSummaries = [];
-  double _overallGPA = 0;
-  double _classAverage = 0;
+  Map<String, dynamic>? _gradesData;
   bool _isLoading = false;
   String? _errorMessage;
-  String? _selectedClassId;
 
   // Getters
-  List<GradeModel> get grades => _grades;
-  Map<String, List<GradeModel>> get gradesByClass => _gradesByClass;
-  List<Map<String, dynamic>> get studentSummaries => _studentSummaries;
-  double get overallGPA => _overallGPA;
-  double get classAverage => _classAverage;
+  Map<String, dynamic>? get gradesData => _gradesData;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-  String? get selectedClassId => _selectedClassId;
 
-  /// Load grades for current student
-  /// **Validates: Requirements 13.1-13.5**
-  Future<void> loadMyGrades() async {
+  /// Load grades for current student in a specific class
+  Future<void> loadStudentGrades(String classId) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      _grades = await gradesService.fetchMyGrades();
-      _gradesByClass = await gradesService.getGradesByClass();
-      _overallGPA = await gradesService.getOverallGPA();
+      _gradesData = await gradesService.fetchStudentGrades(classId);
     } catch (e) {
       _errorMessage = e.toString();
+      debugPrint('Error loading student grades: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  /// Load grades for a specific student in a class
-  Future<void> loadStudentGrades(String studentId, String classId) async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+  /// Get quiz grades as GradeModel list
+  List<GradeModel> get quizGrades {
+    if (_gradesData == null) return [];
+    final rawGrades = List<Map<String, dynamic>>.from(
+      _gradesData!['quiz_grades'] ?? [],
+    );
+    return rawGrades.map((grade) => _convertToGradeModel(grade)).toList();
+  }
 
-    try {
-      _grades = await gradesService.fetchStudentGrades(studentId, classId);
-      _classAverage = await gradesService.calculateStudentAverage(
-        studentId,
-        classId,
-      );
-    } catch (e) {
-      _errorMessage = e.toString();
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+  /// Get assignment grades as GradeModel list
+  List<GradeModel> get assignmentGrades {
+    if (_gradesData == null) return [];
+    final rawGrades = List<Map<String, dynamic>>.from(
+      _gradesData!['assignment_grades'] ?? [],
+    );
+    return rawGrades.map((grade) => _convertToGradeModel(grade)).toList();
+  }
+
+  /// Get all grades as GradeModel list
+  List<GradeModel> get allGrades {
+    return [...quizGrades, ...assignmentGrades];
+  }
+
+  /// Get grades (for compatibility)
+  List<GradeModel> get grades => allGrades;
+
+  /// Get grades by class
+  Map<String, List<GradeModel>> get gradesByClass {
+    final Map<String, List<GradeModel>> result = {};
+    for (final grade in allGrades) {
+      result[grade.classId] ??= [];
+      result[grade.classId]!.add(grade);
     }
+    return result;
   }
 
-  /// Load class grades summary (mentor view)
-  /// **Validates: Requirements 14.1-14.5**
-  Future<void> loadClassGradesSummary(String classId) async {
-    _isLoading = true;
-    _errorMessage = null;
-    _selectedClassId = classId;
-    notifyListeners();
-
-    try {
-      _studentSummaries = await gradesService.getStudentGradesSummary(classId);
-    } catch (e) {
-      _errorMessage = e.toString();
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  /// Sync grade from quiz attempt
-  Future<GradeModel?> syncGradeFromQuiz({
-    required String studentId,
-    required String classId,
-    required String quizId,
-    required double score,
-    required double maxScore,
-    String? quizTitle,
-  }) async {
-    try {
-      final grade = await gradesService.syncGradeFromQuiz(
-        studentId: studentId,
-        classId: classId,
-        quizId: quizId,
-        score: score,
-        maxScore: maxScore,
-        quizTitle: quizTitle,
-      );
-
-      if (grade != null) {
-        // Update local state
-        final index = _grades.indexWhere((g) => g.itemId == quizId);
-        if (index != -1) {
-          _grades[index] = grade;
-        } else {
-          _grades.insert(0, grade);
-        }
-        notifyListeners();
-      }
-      return grade;
-    } catch (e) {
-      _errorMessage = e.toString();
-      notifyListeners();
-      return null;
-    }
-  }
-
-  /// Sync grade from assignment submission
-  Future<GradeModel?> syncGradeFromAssignment({
-    required String studentId,
-    required String classId,
-    required String assignmentId,
-    required double score,
-    required double maxScore,
-    String? assignmentTitle,
-  }) async {
-    try {
-      final grade = await gradesService.syncGradeFromAssignment(
-        studentId: studentId,
-        classId: classId,
-        assignmentId: assignmentId,
-        score: score,
-        maxScore: maxScore,
-        assignmentTitle: assignmentTitle,
-      );
-
-      if (grade != null) {
-        // Update local state
-        final index = _grades.indexWhere((g) => g.itemId == assignmentId);
-        if (index != -1) {
-          _grades[index] = grade;
-        } else {
-          _grades.insert(0, grade);
-        }
-        notifyListeners();
-      }
-      return grade;
-    } catch (e) {
-      _errorMessage = e.toString();
-      notifyListeners();
-      return null;
-    }
-  }
-
-  /// Get grades filtered by type
-  List<GradeModel> get quizGrades =>
-      _grades.where((g) => g.isQuizGrade).toList();
-
-  List<GradeModel> get assignmentGrades =>
-      _grades.where((g) => g.isAssignmentGrade).toList();
-
-  /// Get passing grades
-  List<GradeModel> get passingGrades =>
-      _grades.where((g) => g.isPassing).toList();
-
-  /// Get failing grades
-  List<GradeModel> get failingGrades =>
-      _grades.where((g) => !g.isPassing).toList();
-
-  /// Calculate average for current grades
-  double get currentAverage {
-    if (_grades.isEmpty) return 0;
-    return GradeCalculator.calculateAverage(_grades);
-  }
-
-  /// Calculate weighted average for current grades
-  double get currentWeightedAverage {
-    if (_grades.isEmpty) return 0;
-    return GradeCalculator.calculateWeightedAverage(_grades);
-  }
-
-  /// Get total items count
-  int get totalItems => _grades.length;
+  /// Get current average
+  double get currentAverage => overallAverage;
 
   /// Get quiz count
   int get quizCount => quizGrades.length;
@@ -198,19 +82,45 @@ class GradesProvider extends ChangeNotifier {
   /// Get assignment count
   int get assignmentCount => assignmentGrades.length;
 
-  /// Set selected class
-  void setSelectedClass(String? classId) {
-    _selectedClassId = classId;
-    notifyListeners();
+  /// Get class average (alias for overall average)
+  double get classAverage => overallAverage;
+
+  /// Calculate quiz average
+  double get quizAverage {
+    final rawGrades = List<Map<String, dynamic>>.from(
+      _gradesData?['quiz_grades'] ?? [],
+    );
+    return gradesService.calculateAverage(rawGrades);
   }
 
-  /// Clear grades
+  /// Calculate assignment average
+  double get assignmentAverage {
+    final rawGrades = List<Map<String, dynamic>>.from(
+      _gradesData?['assignment_grades'] ?? [],
+    );
+    return gradesService.calculateAverage(rawGrades);
+  }
+
+  /// Calculate overall average
+  double get overallAverage {
+    final rawGrades = [
+      ...List<Map<String, dynamic>>.from(_gradesData?['quiz_grades'] ?? []),
+      ...List<Map<String, dynamic>>.from(
+        _gradesData?['assignment_grades'] ?? [],
+      ),
+    ];
+    return gradesService.calculateAverage(rawGrades);
+  }
+
+  /// Get letter grade
+  String get letterGrade {
+    return gradesService.getLetterGrade(overallAverage);
+  }
+
+  /// Clear grades data
   void clearGrades() {
-    _grades = [];
-    _gradesByClass = {};
-    _studentSummaries = [];
-    _overallGPA = 0;
-    _classAverage = 0;
+    _gradesData = null;
+    _errorMessage = null;
     notifyListeners();
   }
 
@@ -218,5 +128,89 @@ class GradesProvider extends ChangeNotifier {
   void clearError() {
     _errorMessage = null;
     notifyListeners();
+  }
+
+  /// Load class grades summary for mentor
+  Future<void> loadClassGradesSummary(String classId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _gradesData = await gradesService.fetchStudentGrades(classId);
+    } catch (e) {
+      _errorMessage = e.toString();
+      debugPrint('Error loading class grades summary: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Get student summaries for mentor view
+  List<Map<String, dynamic>> get studentSummaries {
+    if (_gradesData == null) return [];
+
+    // Group grades by student and calculate summaries
+    final Map<String, List<GradeModel>> gradesByStudent = {};
+    for (final grade in allGrades) {
+      gradesByStudent[grade.studentId] ??= [];
+      gradesByStudent[grade.studentId]!.add(grade);
+    }
+
+    return gradesByStudent.entries.map((entry) {
+      final studentGrades = entry.value;
+      final average = studentGrades.isNotEmpty
+          ? studentGrades.fold(0.0, (sum, g) => sum + g.percentage) /
+                studentGrades.length
+          : 0.0;
+
+      return {
+        'student_id': entry.key,
+        'student_name': 'Student ${entry.key.substring(0, 8)}', // Placeholder
+        'total_grades': studentGrades.length,
+        'average': average,
+        'quiz_count': studentGrades.where((g) => g.isQuizGrade).length,
+        'assignment_count': studentGrades
+            .where((g) => g.isAssignmentGrade)
+            .length,
+      };
+    }).toList();
+  }
+
+  // Legacy methods for compatibility
+  Future<void> loadMyGrades() async {
+    // For compatibility - does nothing
+    debugPrint('loadMyGrades called - use loadStudentGrades instead');
+  }
+
+  /// Convert raw grade data to GradeModel
+  GradeModel _convertToGradeModel(Map<String, dynamic> grade) {
+    return GradeModel(
+      id: grade['id']?.toString() ?? '',
+      studentId: grade['student_id']?.toString() ?? '',
+      classId: grade['class_id']?.toString() ?? '',
+      itemId: grade['item_id']?.toString() ?? grade['id']?.toString() ?? '',
+      itemType: grade['type'] ?? 'quiz',
+      score: (grade['score'] ?? 0).toDouble(),
+      maxScore: (grade['max_score'] ?? 100).toDouble(),
+      percentage: (grade['percentage'] ?? 0).toDouble(),
+      recordedAt:
+          _parseDateTime(grade['submitted_at'] ?? grade['graded_at']) ??
+          DateTime.now(),
+      itemTitle: grade['title'],
+      className: grade['class_name'],
+    );
+  }
+
+  /// Parse DateTime from string
+  DateTime? _parseDateTime(String? dateString) {
+    if (dateString == null || dateString.isEmpty) return null;
+    try {
+      return DateTime.parse(dateString);
+    } catch (e) {
+      debugPrint('Error parsing DateTime: $dateString - $e');
+      return null;
+    }
   }
 }

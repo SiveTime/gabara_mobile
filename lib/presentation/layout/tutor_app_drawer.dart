@@ -140,12 +140,19 @@ class TutorAppDrawer extends StatelessWidget {
   }
 
   void _navigateTo(BuildContext context, String routeKey, Widget page) {
-    Navigator.pop(context);
+    Navigator.pop(context); // Close drawer
     if (activeRoute != routeKey) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => page),
-      );
+      // For dashboard, use pushAndRemoveUntil to reset navigation stack
+      if (routeKey == 'dashboard') {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => page),
+          (route) => false,
+        );
+      } else {
+        // For other pages, use push to maintain back navigation to dashboard
+        Navigator.push(context, MaterialPageRoute(builder: (context) => page));
+      }
     }
   }
 

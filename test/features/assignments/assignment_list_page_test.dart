@@ -14,12 +14,12 @@ import 'package:gabara_mobile/features/assignments/presentation/providers/assign
 class MockAssignmentProvider extends ChangeNotifier implements AssignmentProvider {
   List<AssignmentModel> _assignments = [];
   AssignmentModel? _currentAssignment;
-  List<SubmissionModel> _submissions = [];
+  final List<SubmissionModel> _submissions = [];
   SubmissionModel? _currentSubmission;
-  List<Map<String, dynamic>> _myClasses = [];
+  final List<Map<String, dynamic>> _myClasses = [];
   bool _isLoading = false;
   String? _errorMessage;
-  bool _hasSubmissions = false;
+  final bool _hasSubmissions = false;
 
   @override
   List<AssignmentModel> get assignments => _assignments;

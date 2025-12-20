@@ -15,12 +15,12 @@ import 'package:gabara_mobile/features/student/presentation/providers/student_pr
 
 // Mock StudentProvider for testing
 class MockStudentProvider extends ChangeNotifier implements StudentProvider {
-  List<MeetingModel> _meetings = [];
+  final List<MeetingModel> _meetings = [];
   MeetingModel? _currentMeeting;
   List<AssignmentModel> _assignments = [];
   AssignmentModel? _currentAssignment;
   SubmissionModel? _mySubmission;
-  List<Map<String, dynamic>> _myClasses = [];
+  final List<Map<String, dynamic>> _myClasses = [];
   String? _selectedClassId;
   bool _isLoading = false;
   String? _errorMessage;

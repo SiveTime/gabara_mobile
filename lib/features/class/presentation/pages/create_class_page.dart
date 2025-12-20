@@ -98,7 +98,7 @@ class _CreateClassPageState extends State<CreateClassPage> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.book),
                 ),
-                value: _selectedSubjectId,
+                initialValue: _selectedSubjectId,
                 items: classProvider.subjects.map((subject) {
                   return DropdownMenuItem<int>(
                     value: subject['id'] as int,
@@ -139,8 +139,9 @@ class _CreateClassPageState extends State<CreateClassPage> {
                 ),
                 keyboardType: TextInputType.number,
                 validator: (value) {
-                  if (value == null || value.isEmpty)
+                  if (value == null || value.isEmpty) {
                     return 'Kuota wajib diisi';
+                  }
                   if (int.tryParse(value) == null) return 'Harus berupa angka';
                   return null;
                 },

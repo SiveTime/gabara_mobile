@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../data/models/class_model.dart';
 import '../../data/services/class_service.dart';
+import '../../domain/entities/class_member_entity.dart';
 
 class ClassProvider extends ChangeNotifier {
   final ClassService classService;
@@ -9,12 +10,16 @@ class ClassProvider extends ChangeNotifier {
 
   List<ClassModel> _classes = [];
   List<Map<String, dynamic>> _subjects = [];
+  List<ClassMemberEntity> _classMembers = [];
   bool _isLoading = false;
+  bool _isMembersLoading = false;
   String? _errorMessage;
 
   List<ClassModel> get classes => _classes;
   List<Map<String, dynamic>> get subjects => _subjects;
+  List<ClassMemberEntity> get classMembers => _classMembers;
   bool get isLoading => _isLoading;
+  bool get isMembersLoading => _isMembersLoading;
   String? get errorMessage => _errorMessage;
 
   // Fetch enrolled classes (for student)
@@ -155,5 +160,28 @@ class ClassProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  // Fetch class members
+  Future<void> fetchClassMembers(String classId) async {
+    _isMembersLoading = true;
+    notifyListeners();
+
+    try {
+      _classMembers = await classService.getClassMembers(classId);
+      debugPrint('ClassProvider: Fetched ${_classMembers.length} members');
+    } catch (e) {
+      debugPrint('ClassProvider: Error fetching members - $e');
+      _classMembers = [];
+    } finally {
+      _isMembersLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Clear members when switching classes
+  void clearMembers() {
+    _classMembers = [];
+    notifyListeners();
   }
 }

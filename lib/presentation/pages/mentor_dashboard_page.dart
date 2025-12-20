@@ -25,7 +25,9 @@ class _MentorDashboardPageState extends State<MentorDashboardPage> {
     super.initState();
     // Fetch kelas mentor
     Future.microtask(() {
-      Provider.of<ClassProvider>(context, listen: false).fetchMyClasses();
+      if (mounted) {
+        Provider.of<ClassProvider>(context, listen: false).fetchMyClasses();
+      }
     });
   }
 
@@ -110,7 +112,8 @@ class _MentorDashboardPageState extends State<MentorDashboardPage> {
                         icon: Icons.assignment_outlined,
                         title: 'Tugas Dibuat',
                         count: '0',
-                        onTap: () => Navigator.pushNamed(context, '/assignments'),
+                        onTap: () =>
+                            Navigator.pushNamed(context, '/assignments'),
                       ),
                     ),
                     const SizedBox(width: 16),

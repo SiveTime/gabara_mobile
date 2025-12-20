@@ -71,4 +71,26 @@ class AuthRepositoryImpl implements AuthRepository {
     }
     // --------------------------------
   }
+
+  @override
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await authService.sendPasswordResetEmail(email);
+    } on AuthException catch (e) {
+      throw Exception('Gagal mengirim email reset: ${e.message}');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> resetPassword(String accessToken, String newPassword) async {
+    try {
+      await authService.resetPassword(accessToken, newPassword);
+    } on AuthException catch (e) {
+      throw Exception('Gagal reset password: ${e.message}');
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

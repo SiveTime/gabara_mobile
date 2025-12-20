@@ -31,7 +31,9 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
     super.initState();
     // Fetch enrolled classes untuk student
     Future.microtask(() {
-      Provider.of<ClassProvider>(context, listen: false).fetchClasses();
+      if (mounted) {
+        Provider.of<ClassProvider>(context, listen: false).fetchClasses();
+      }
     });
   }
 

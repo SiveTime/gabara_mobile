@@ -3,12 +3,21 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/usecases/login_user.dart';
 import '../../domain/usecases/register_user.dart';
+import '../../domain/usecases/forgot_password.dart';
+import '../../domain/usecases/reset_password.dart';
 
 class AuthProvider extends ChangeNotifier {
   final LoginUser loginUser;
   final RegisterUser registerUser;
+  final ForgotPassword forgotPassword;
+  final ResetPassword resetPassword;
 
-  AuthProvider({required this.loginUser, required this.registerUser});
+  AuthProvider({
+    required this.loginUser,
+    required this.registerUser,
+    required this.forgotPassword,
+    required this.resetPassword,
+  });
 
   UserEntity? _user;
   bool _isLoading = false;
@@ -47,7 +56,7 @@ class AuthProvider extends ChangeNotifier {
     String name,
     String email,
     String password,
-    String phone, 
+    String phone,
     String gender,
     String birthDate,
   ) async {
@@ -61,7 +70,7 @@ class AuthProvider extends ChangeNotifier {
         name,
         email,
         password,
-        phone, 
+        phone,
         gender,
         birthDate,
         'student', // Default role
@@ -82,6 +91,50 @@ class AuthProvider extends ChangeNotifier {
   Future<void> logout() async {
     await Supabase.instance.client.auth.signOut();
     _user = null;
+    notifyListeners();
+  }
+
+  // Forgot Password - Send reset email
+  Future<bool> sendPasswordResetEmail(String email) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await forgotPassword.call(email);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // Reset Password - Update password with new one
+  Future<bool> updatePassword(String accessToken, String newPassword) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await resetPassword.call(accessToken, newPassword);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // Clear error message
+  void clearError() {
+    _errorMessage = null;
     notifyListeners();
   }
 }

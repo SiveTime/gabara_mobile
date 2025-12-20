@@ -1,7 +1,6 @@
 // test/features/quiz/presentation/providers/quiz_provider_test.dart
 import 'dart:math';
 import 'package:test/test.dart';
-import 'package:gabara_mobile/features/quiz/data/models/quiz_model.dart';
 import 'package:gabara_mobile/features/quiz/presentation/providers/quiz_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:gabara_mobile/features/quiz/data/services/quiz_service.dart';

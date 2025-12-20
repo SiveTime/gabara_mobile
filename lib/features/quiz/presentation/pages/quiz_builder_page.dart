@@ -235,7 +235,7 @@ class _QuizBuilderPageState extends State<QuizBuilderPage> {
 
           _buildLabel('Kelas'),
           DropdownButtonFormField<String>(
-            value: _selectedClassId,
+            initialValue: _selectedClassId,
             decoration: _inputDecoration('Pilih kelas'),
             items: provider.myClasses.map((c) {
               return DropdownMenuItem<String>(
@@ -319,7 +319,7 @@ class _QuizBuilderPageState extends State<QuizBuilderPage> {
                   children: [
                     _buildLabel('Status'),
                     DropdownButtonFormField<String>(
-                      value: _status,
+                      initialValue: _status,
                       decoration: _inputDecoration(''),
                       items: const [
                         DropdownMenuItem(value: 'draft', child: Text('Draf')),
@@ -443,10 +443,11 @@ class _QuizBuilderPageState extends State<QuizBuilderPage> {
     );
     if (picked != null) {
       setState(() {
-        if (isOpen)
+        if (isOpen) {
           _openDate = picked;
-        else
+        } else {
           _closeDate = picked;
+        }
       });
     }
   }
@@ -458,10 +459,11 @@ class _QuizBuilderPageState extends State<QuizBuilderPage> {
     );
     if (picked != null) {
       setState(() {
-        if (isOpen)
+        if (isOpen) {
           _openTime = picked;
-        else
+        } else {
           _closeTime = picked;
+        }
       });
     }
   }

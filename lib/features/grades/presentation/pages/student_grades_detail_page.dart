@@ -22,7 +22,8 @@ class StudentGradesDetailPage extends StatefulWidget {
   });
 
   @override
-  State<StudentGradesDetailPage> createState() => _StudentGradesDetailPageState();
+  State<StudentGradesDetailPage> createState() =>
+      _StudentGradesDetailPageState();
 }
 
 class _StudentGradesDetailPageState extends State<StudentGradesDetailPage> {
@@ -30,7 +31,7 @@ class _StudentGradesDetailPageState extends State<StudentGradesDetailPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<GradesProvider>().loadStudentGrades(widget.studentId, widget.classId);
+      context.read<GradesProvider>().loadStudentGrades(widget.classId);
     });
   }
 
@@ -52,7 +53,7 @@ class _StudentGradesDetailPageState extends State<StudentGradesDetailPage> {
                   Text('Error: ${provider.errorMessage}'),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () => provider.loadStudentGrades(widget.studentId, widget.classId),
+                    onPressed: () => provider.loadStudentGrades(widget.classId),
                     child: const Text('Coba Lagi'),
                   ),
                 ],
@@ -67,14 +68,17 @@ class _StudentGradesDetailPageState extends State<StudentGradesDetailPage> {
                 children: [
                   Icon(Icons.grade_outlined, size: 64, color: Colors.grey[400]),
                   const SizedBox(height: 16),
-                  Text('Belum ada nilai', style: TextStyle(color: Colors.grey[600])),
+                  Text(
+                    'Belum ada nilai',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
                 ],
               ),
             );
           }
 
           return RefreshIndicator(
-            onRefresh: () => provider.loadStudentGrades(widget.studentId, widget.classId),
+            onRefresh: () => provider.loadStudentGrades(widget.classId),
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
@@ -87,17 +91,31 @@ class _StudentGradesDetailPageState extends State<StudentGradesDetailPage> {
 
                   // Quiz Grades Section
                   if (provider.quizGrades.isNotEmpty) ...[
-                    _buildSectionHeader('Quiz', Icons.quiz, Colors.purple, provider.quizGrades.length),
+                    _buildSectionHeader(
+                      'Quiz',
+                      Icons.quiz,
+                      Colors.purple,
+                      provider.quizGrades.length,
+                    ),
                     const SizedBox(height: 8),
-                    ...provider.quizGrades.map((grade) => _buildGradeCard(grade)),
+                    ...provider.quizGrades.map(
+                      (grade) => _buildGradeCard(grade),
+                    ),
                     const SizedBox(height: 16),
                   ],
 
                   // Assignment Grades Section
                   if (provider.assignmentGrades.isNotEmpty) ...[
-                    _buildSectionHeader('Tugas', Icons.assignment, Colors.orange, provider.assignmentGrades.length),
+                    _buildSectionHeader(
+                      'Tugas',
+                      Icons.assignment,
+                      Colors.orange,
+                      provider.assignmentGrades.length,
+                    ),
                     const SizedBox(height: 8),
-                    ...provider.assignmentGrades.map((grade) => _buildGradeCard(grade)),
+                    ...provider.assignmentGrades.map(
+                      (grade) => _buildGradeCard(grade),
+                    ),
                   ],
                 ],
               ),
@@ -121,22 +139,44 @@ class _StudentGradesDetailPageState extends State<StudentGradesDetailPage> {
             CircleAvatar(
               radius: 36,
               backgroundColor: _getGradeColor(average),
-              child: Text(letterGrade, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 24)),
+              child: Text(
+                letterGrade,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24,
+                ),
+              ),
             ),
             const SizedBox(width: 20),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(widget.studentName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text(
+                    widget.studentName,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text('Rata-rata: ${average.toStringAsFixed(1)}%', style: TextStyle(fontSize: 16, color: Colors.grey[700])),
+                  Text(
+                    'Rata-rata: ${average.toStringAsFixed(1)}%',
+                    style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                  ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      _buildStatChip('${provider.quizCount} Quiz', Colors.purple),
+                      _buildStatChip(
+                        '${provider.quizCount} Quiz',
+                        Colors.purple,
+                      ),
                       const SizedBox(width: 8),
-                      _buildStatChip('${provider.assignmentCount} Tugas', Colors.orange),
+                      _buildStatChip(
+                        '${provider.assignmentCount} Tugas',
+                        Colors.orange,
+                      ),
                     ],
                   ),
                 ],
@@ -151,22 +191,50 @@ class _StudentGradesDetailPageState extends State<StudentGradesDetailPage> {
   Widget _buildStatChip(String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
-      child: Text(label, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w500)),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          color: color,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 
-  Widget _buildSectionHeader(String title, IconData icon, Color color, int count) {
+  Widget _buildSectionHeader(
+    String title,
+    IconData icon,
+    Color color,
+    int count,
+  ) {
     return Row(
       children: [
         Icon(icon, color: color, size: 24),
         const SizedBox(width: 8),
-        Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
         const Spacer(),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-          child: Text('$count item', style: TextStyle(fontSize: 12, color: color)),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            '$count item',
+            style: TextStyle(fontSize: 12, color: color),
+          ),
         ),
       ],
     );
@@ -178,16 +246,33 @@ class _StudentGradesDetailPageState extends State<StudentGradesDetailPage> {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: _getGradeColor(grade.percentage),
-          child: Text(_getLetterGrade(grade.percentage), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          child: Text(
+            _getLetterGrade(grade.percentage),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
         title: Text(grade.itemTitle ?? (grade.isQuizGrade ? 'Quiz' : 'Tugas')),
-        subtitle: Text(DateFormat('dd MMM yyyy, HH:mm').format(grade.recordedAt)),
+        subtitle: Text(
+          DateFormat('dd MMM yyyy, HH:mm').format(grade.recordedAt),
+        ),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text('${grade.score.toStringAsFixed(0)}/${grade.maxScore.toStringAsFixed(0)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            Text('${grade.percentage.toStringAsFixed(1)}%', style: TextStyle(fontSize: 12, color: _getGradeColor(grade.percentage))),
+            Text(
+              '${grade.score.toStringAsFixed(0)}/${grade.maxScore.toStringAsFixed(0)}',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            Text(
+              '${grade.percentage.toStringAsFixed(1)}%',
+              style: TextStyle(
+                fontSize: 12,
+                color: _getGradeColor(grade.percentage),
+              ),
+            ),
           ],
         ),
       ),

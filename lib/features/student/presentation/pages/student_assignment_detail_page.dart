@@ -100,7 +100,7 @@ class _StudentAssignmentDetailPageState extends State<StudentAssignmentDetailPag
 
                 // Submission Status Section
                 if (hasSubmitted) ...[
-                  _buildSubmissionStatusSection(submission!, isGraded),
+                  _buildSubmissionStatusSection(submission, isGraded),
                   const SizedBox(height: 24),
                 ],
 

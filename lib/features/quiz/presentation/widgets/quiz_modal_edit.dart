@@ -242,7 +242,7 @@ class _QuizModalEditState extends State<QuizModalEdit>
           Consumer<QuizProvider>(
             builder: (context, provider, child) {
               return DropdownButtonFormField<String>(
-                value: _selectedClassId,
+                initialValue: _selectedClassId,
                 decoration: _inputDecoration('Pilih kelas'),
                 items: provider.myClasses.map((c) {
                   return DropdownMenuItem<String>(

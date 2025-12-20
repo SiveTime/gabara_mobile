@@ -332,9 +332,8 @@ void main() {
         }
 
         // Simulate random navigation
-        var currentIndex = 0;
         for (var nav = 0; nav < 50; nav++) {
-          currentIndex = random.nextInt(questionCount);
+          random.nextInt(questionCount);
         }
 
         // Verify all answers are preserved

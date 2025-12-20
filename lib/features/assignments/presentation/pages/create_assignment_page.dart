@@ -137,7 +137,7 @@ class _CreateAssignmentPageState extends State<CreateAssignmentPage> {
 
                 // Class dropdown
                 DropdownButtonFormField<String>(
-                  value: _selectedClassId,
+                  initialValue: _selectedClassId,
                   decoration: const InputDecoration(
                     labelText: 'Kelas *',
                     border: OutlineInputBorder(),

@@ -136,8 +136,14 @@ class _StudentQuizResultPageState extends State<StudentQuizResultPage> {
         child: Row(
           children: [
             GestureDetector(
-              onTap: () =>
-                  Navigator.popUntil(context, (route) => route.isFirst),
+              onTap: () {
+                // Navigate to student dashboard instead of first route
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/student-dashboard',
+                  (route) => false,
+                );
+              },
               child: const Text('Home', style: TextStyle(color: Colors.blue)),
             ),
             const Icon(Icons.chevron_right, size: 16, color: Colors.grey),

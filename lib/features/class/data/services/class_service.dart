@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/class_model.dart';
+import '../../domain/entities/class_member_entity.dart';
 
 class ClassService {
   final SupabaseClient supabaseClient;
@@ -248,6 +249,270 @@ class ClassService {
       return (response as List).length;
     } catch (e) {
       return 0;
+    }
+  }
+
+  // Get class members (students and mentors)
+  Future<List<ClassMemberEntity>> getClassMembers(String classId) async {
+    try {
+      debugPrint('=== FETCHING CLASS MEMBERS ===');
+      debugPrint('Class ID: $classId');
+
+      List<ClassMemberEntity> members = [];
+
+      // Step 1: Get enrolled students from class_enrollments
+      final enrollments = await supabaseClient
+          .from('class_enrollments')
+          .select('id, user_id, class_id, status, joined_at')
+          .eq('class_id', classId)
+          .eq('status', 'active')
+          .order('joined_at', ascending: true);
+
+      debugPrint('Enrollments found: ${enrollments.length}');
+      debugPrint('Enrollments data: $enrollments');
+
+      // Step 2: Get user profiles for enrolled students
+      if (enrollments.isNotEmpty) {
+        final userIds = enrollments.map((e) => e['user_id']).toList();
+
+        debugPrint('User IDs to fetch: $userIds');
+
+        final profiles = await supabaseClient
+            .from('profiles')
+            .select('id, full_name, avatar_url')
+            .inFilter('id', userIds);
+
+        debugPrint('Profiles found: ${profiles.length}');
+        debugPrint('Profiles data: $profiles');
+
+        // Map profiles to enrollments
+        final profileMap = <String, dynamic>{};
+        for (var profile in profiles) {
+          profileMap[profile['id']] = profile;
+        }
+
+        // Create member entities for students
+        for (var enrollment in enrollments) {
+          final userId = enrollment['user_id'];
+          final profile = profileMap[userId];
+
+          debugPrint(
+            'Processing enrollment - userId: $userId, profile: $profile',
+          );
+
+          if (profile != null) {
+            members.add(
+              ClassMemberEntity(
+                id: enrollment['id'],
+                userId: userId,
+                classId: enrollment['class_id'],
+                fullName: profile['full_name'] ?? 'Unknown Student',
+                email: '',
+                profilePicture: profile['avatar_url'],
+                joinedAt: DateTime.parse(enrollment['joined_at']),
+                role: 'student',
+              ),
+            );
+          }
+        }
+      }
+
+      // Step 3: Get class tutor/mentor
+      final classData = await supabaseClient
+          .from('classes')
+          .select('tutor_id, created_at')
+          .eq('id', classId)
+          .maybeSingle();
+
+      debugPrint('Class data: $classData');
+
+      if (classData != null && classData['tutor_id'] != null) {
+        final tutorId = classData['tutor_id'];
+
+        final tutorProfile = await supabaseClient
+            .from('profiles')
+            .select('id, full_name, avatar_url')
+            .eq('id', tutorId)
+            .maybeSingle();
+
+        debugPrint('Tutor profile: $tutorProfile');
+
+        if (tutorProfile != null) {
+          members.add(
+            ClassMemberEntity(
+              id: 'tutor_$tutorId',
+              userId: tutorId,
+              classId: classId,
+              fullName: tutorProfile['full_name'] ?? 'Mentor',
+              email: '',
+              profilePicture: tutorProfile['avatar_url'],
+              joinedAt: DateTime.parse(classData['created_at']),
+              role: 'mentor',
+            ),
+          );
+        }
+      }
+
+      debugPrint('Total members found: ${members.length}');
+
+      // Sort members: mentor first, then students by join date
+      members.sort((a, b) {
+        if (a.role == 'mentor' && b.role != 'mentor') return -1;
+        if (a.role != 'mentor' && b.role == 'mentor') return 1;
+        return a.joinedAt.compareTo(b.joinedAt);
+      });
+
+      return members;
+    } catch (e) {
+      debugPrint('Error fetching class members: $e');
+      debugPrint('Stack trace: ${StackTrace.current}');
+      return [];
+    }
+  }
+
+  // Simple test method
+  Future<Map<String, dynamic>> testDatabaseConnection() async {
+    try {
+      final user = supabaseClient.auth.currentUser;
+
+      // Test basic queries
+      final classCount = await supabaseClient
+          .from('classes')
+          .select('id')
+          .count();
+      final enrollmentCount = await supabaseClient
+          .from('class_enrollments')
+          .select('id')
+          .count();
+      final profileCount = await supabaseClient
+          .from('profiles')
+          .select('id')
+          .count();
+
+      return {
+        'success': true,
+        'user_id': user?.id,
+        'user_email': user?.email,
+        'classes_count': classCount,
+        'enrollments_count': enrollmentCount,
+        'profiles_count': profileCount,
+      };
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  // Debug: Check database structure for class members
+  Future<Map<String, dynamic>> debugDatabaseStructure(String classId) async {
+    try {
+      debugPrint('=== DEBUG DATABASE STRUCTURE ===');
+
+      // Check 1: Try to fetch from class_enrollments
+      final enrollments = await supabaseClient
+          .from('class_enrollments')
+          .select('*')
+          .eq('class_id', classId)
+          .limit(1);
+
+      debugPrint('class_enrollments sample: $enrollments');
+
+      // Check 2: Try to fetch class with students relationship
+      final classWithStudents = await supabaseClient
+          .from('classes')
+          .select('*, students(*)')
+          .eq('id', classId)
+          .maybeSingle();
+
+      debugPrint('classes with students: $classWithStudents');
+
+      // Check 3: Check if there's a class_students table
+      final classStudents = await supabaseClient
+          .from('class_students')
+          .select('*')
+          .eq('class_id', classId)
+          .limit(1);
+
+      debugPrint('class_students sample: $classStudents');
+
+      // Check 4: Get all tables info
+      final allEnrollments = await supabaseClient
+          .from('class_enrollments')
+          .select('*')
+          .eq('class_id', classId);
+
+      debugPrint('Total enrollments: ${allEnrollments.length}');
+      if (allEnrollments.isNotEmpty) {
+        debugPrint('First enrollment: ${allEnrollments[0]}');
+      }
+
+      return {
+        'enrollments_count': allEnrollments.length,
+        'has_enrollments': allEnrollments.isNotEmpty,
+        'first_enrollment': allEnrollments.isNotEmpty
+            ? allEnrollments[0]
+            : null,
+      };
+    } catch (e) {
+      debugPrint('Debug error: $e');
+      return {'error': e.toString()};
+    }
+  }
+
+  // Debug method to check enrollment data
+  Future<void> debugClassEnrollments(String classId) async {
+    try {
+      debugPrint('=== DEBUG CLASS ENROLLMENTS ===');
+      debugPrint('Class ID: $classId');
+
+      final user = supabaseClient.auth.currentUser;
+      debugPrint('Current user: ${user?.id}');
+      debugPrint('User email: ${user?.email}');
+
+      // Check if class exists
+      final classExists = await supabaseClient
+          .from('classes')
+          .select('id, name, tutor_id')
+          .eq('id', classId)
+          .maybeSingle();
+
+      debugPrint('Class exists: $classExists');
+
+      // Check ALL enrollments for this class (no filters)
+      final allEnrollments = await supabaseClient
+          .from('class_enrollments')
+          .select('*')
+          .eq('class_id', classId);
+
+      debugPrint(
+        'All enrollments for class (${allEnrollments.length}): $allEnrollments',
+      );
+
+      // Check profiles table
+      if (allEnrollments.isNotEmpty) {
+        final userIds = allEnrollments.map((e) => e['user_id']).toList();
+        final profiles = await supabaseClient
+            .from('profiles')
+            .select('*')
+            .inFilter('id', userIds);
+
+        debugPrint(
+          'Profiles for enrolled users (${profiles.length}): $profiles',
+        );
+      }
+
+      // Check current user's profile
+      if (user != null) {
+        final userProfile = await supabaseClient
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .maybeSingle();
+
+        debugPrint('Current user profile: $userProfile');
+      }
+    } catch (e) {
+      debugPrint('Debug error: $e');
+      debugPrint('Stack trace: ${StackTrace.current}');
     }
   }
 }

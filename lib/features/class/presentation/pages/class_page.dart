@@ -129,7 +129,7 @@ class _ClassPageState extends State<ClassPage> {
                             if (!dialogContext.mounted) return;
                             Navigator.pop(dialogContext);
 
-                            if (!context.mounted) return;
+                            if (!mounted) return;
                             if (success) {
                               _enrollCodeController.clear();
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -201,7 +201,7 @@ class _ClassPageState extends State<ClassPage> {
                 if (!dialogContext.mounted) return;
                 Navigator.pop(dialogContext);
 
-                if (!context.mounted) return;
+                if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
@@ -266,152 +266,166 @@ class _ClassPageState extends State<ClassPage> {
             ? const Center(child: CircularProgressIndicator())
             : classProvider.classes.isEmpty
             ? _buildEmptyState(isMentor)
-            : ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-                itemCount: classProvider.classes.length + 1, // +1 untuk header
-                itemBuilder: (context, index) {
-                  // Header
-                  if (index == 0) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 16, top: 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Kelas',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
+            : Column(
+                children: [
+                  // Header yang konsisten untuk semua state
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Kelasku',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
                           ),
-                          if (!isMentor)
-                            ElevatedButton.icon(
-                              onPressed: () => _showEnrollDialog(context),
-                              icon: const Icon(Icons.add, size: 18),
-                              label: const Text("Enroll"),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: accentBlue,
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 10,
-                                ),
+                        ),
+                        if (!isMentor)
+                          ElevatedButton.icon(
+                            onPressed: () => _showEnrollDialog(context),
+                            icon: const Icon(Icons.add, size: 18),
+                            label: const Text("Enroll"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: accentBlue,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 10,
                               ),
                             ),
-                        ],
-                      ),
-                    );
-                  }
-                  // Class Cards
-                  final classItem = classProvider.classes[index - 1];
-                  return ClassCard(
-                    classEntity: classItem,
-                    isMentor: isMentor,
-                    onEdit: isMentor
-                        ? () => Navigator.pushNamed(
-                            context,
-                            '/edit-class',
-                            arguments: classItem,
-                          )
-                        : null,
-                    onDelete: isMentor
-                        ? () => _showDeleteConfirmation(context, classItem)
-                        : null,
-                  );
-                },
+                          ),
+                      ],
+                    ),
+                  ),
+                  // Class List
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                      itemCount: classProvider.classes.length,
+                      itemBuilder: (context, index) {
+                        final classItem = classProvider.classes[index];
+                        return ClassCard(
+                          classEntity: classItem,
+                          isMentor: isMentor,
+                          onEdit: isMentor
+                              ? () => Navigator.pushNamed(
+                                  context,
+                                  '/edit-class',
+                                  arguments: classItem,
+                                )
+                              : null,
+                          onDelete: isMentor
+                              ? () =>
+                                    _showDeleteConfirmation(context, classItem)
+                              : null,
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
       ),
     );
   }
 
   Widget _buildEmptyState(bool isMentor) {
-    return Center(
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+    return Column(
+      children: [
+        // Header yang konsisten
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Header dengan tombol Enroll untuk student
-              if (!isMentor)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 24),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Kelas',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: () => _showEnrollDialog(context),
-                        icon: const Icon(Icons.add, size: 18),
-                        label: const Text("Enroll"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: accentBlue,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              Image.asset(
-                'assets/kosong.png',
-                height: 200,
-                fit: BoxFit.contain,
-                errorBuilder: (ctx, err, stack) => Icon(
-                  Icons.school_outlined,
-                  size: 120,
-                  color: Colors.grey.shade300,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                isMentor ? "Belum ada kelas" : "Tidak ada kelas yang di enroll",
-                style: const TextStyle(
-                  fontSize: 18,
+              const Text(
+                'Kelasku',
+                style: TextStyle(
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
                 ),
-                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Text(
-                  isMentor
-                      ? "Buat kelas pertama Anda dengan menekan tombol 'Buat Kelas' di bawah"
-                      : "Silahkan enroll dengan meminta kode kelas kepada tutor pribadi!",
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                    height: 1.5,
+              if (!isMentor)
+                ElevatedButton.icon(
+                  onPressed: () => _showEnrollDialog(context),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text("Enroll"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accentBlue,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
                   ),
-                  textAlign: TextAlign.center,
                 ),
-              ),
             ],
           ),
         ),
-      ),
+        // Empty state content
+        Expanded(
+          child: Center(
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset(
+                      'assets/kosong.png',
+                      height: 200,
+                      fit: BoxFit.contain,
+                      errorBuilder: (ctx, err, stack) => Icon(
+                        Icons.school_outlined,
+                        size: 120,
+                        color: Colors.grey.shade300,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      isMentor
+                          ? "Belum ada kelas"
+                          : "Tidak ada kelas yang di enroll",
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      child: Text(
+                        isMentor
+                            ? "Buat kelas pertama Anda dengan menekan tombol 'Buat Kelas' di bawah"
+                            : "Silahkan enroll dengan meminta kode kelas kepada tutor pribadi dengan menekan tombol 'Enroll' di atas!",
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                          height: 1.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

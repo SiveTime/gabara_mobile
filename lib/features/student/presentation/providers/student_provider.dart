@@ -20,7 +20,7 @@ class StudentProvider extends ChangeNotifier {
   List<AssignmentModel> _assignments = [];
   AssignmentModel? _currentAssignment;
   SubmissionModel? _mySubmission;
-  List<Map<String, dynamic>> _myClasses = [];
+  final List<Map<String, dynamic>> _myClasses = [];
   String? _selectedClassId;
   bool _isLoading = false;
   String? _errorMessage;

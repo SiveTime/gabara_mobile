@@ -12,11 +12,11 @@ import 'package:gabara_mobile/features/meetings/presentation/providers/meeting_p
 
 // Mock MeetingProvider for testing
 class MockMeetingProvider extends ChangeNotifier implements MeetingProvider {
-  List<MeetingModel> _meetings = [];
+  final List<MeetingModel> _meetings = [];
   MeetingModel? _currentMeeting;
-  List<AttendanceModel> _attendanceList = [];
+  final List<AttendanceModel> _attendanceList = [];
   List<Map<String, dynamic>> _myClasses = [];
-  bool _isLoading = false;
+  final bool _isLoading = false;
   String? _errorMessage;
   MeetingModel? lastCreatedMeeting;
 

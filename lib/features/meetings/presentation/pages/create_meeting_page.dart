@@ -117,7 +117,7 @@ class _CreateMeetingPageState extends State<CreateMeetingPage> {
 
                 // Class dropdown
                 DropdownButtonFormField<String>(
-                  value: _selectedClassId,
+                  initialValue: _selectedClassId,
                   decoration: const InputDecoration(
                     labelText: 'Kelas *',
                     border: OutlineInputBorder(),

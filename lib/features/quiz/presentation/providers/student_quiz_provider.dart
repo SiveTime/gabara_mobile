@@ -2,6 +2,7 @@
 // Requirements: 1.2, 1.3, 1.4, 1.5, 3.3, 4.1, 4.2, 4.4, 5.3
 
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../data/models/quiz_attempt_model.dart';
 import '../../data/models/quiz_model.dart';
@@ -201,6 +202,12 @@ class StudentQuizProvider extends ChangeNotifier {
   Future<bool> startQuizAttempt() async {
     if (_currentQuiz == null) return false;
 
+    // Prevent race condition: Check if already loading
+    if (_isLoading) {
+      debugPrint('Cannot start quiz: Already loading');
+      return false;
+    }
+
     // Check if there's an in-progress attempt to resume
     final inProgressAttempt = getInProgressAttempt();
     if (inProgressAttempt != null) {
@@ -305,7 +312,60 @@ class StudentQuizProvider extends ChangeNotifier {
   /// Select an answer for current question
   /// **Validates: Requirements 4.4, 4.5**
   void selectAnswer(String questionId, String optionId) {
+    // Validasi: Quiz harus ada dan aktif
+    if (_currentQuiz == null || _currentAttempt == null) {
+      debugPrint('Cannot select answer: Quiz or attempt not active');
+      return;
+    }
+
+    // Validasi: Question harus ada di quiz
+    QuestionModel? question;
+    try {
+      final foundQuestion = _currentQuiz!.questions.firstWhere(
+        (q) => q.id == questionId,
+      );
+      question = foundQuestion is QuestionModel ? foundQuestion : null;
+    } catch (e) {
+      debugPrint('Cannot select answer: Question $questionId not found');
+      return;
+    }
+
+    if (question == null) {
+      debugPrint(
+        'Cannot select answer: Question $questionId is not a QuestionModel',
+      );
+      return;
+    }
+
+    // Validasi: Option harus ada di question
+    try {
+      question.options.firstWhere((o) => o.id == optionId);
+    } catch (e) {
+      debugPrint(
+        'Cannot select answer: Option $optionId not found in question $questionId',
+      );
+      return;
+    }
+
+    // Validasi: Attempt harus masih in_progress
+    if (_currentAttempt!.status != 'in_progress') {
+      debugPrint('Cannot select answer: Attempt is not in progress');
+      return;
+    }
+
+    // Validasi: Timer harus masih berjalan
+    if (_remainingSeconds <= 0) {
+      debugPrint('Cannot select answer: Time expired');
+      return;
+    }
+
+    // Atomic update: Simpan jawaban dengan validasi
+    final previousAnswer = _currentAnswers[questionId];
     _currentAnswers[questionId] = optionId;
+
+    debugPrint(
+      'Answer selected: Question $questionId -> Option $optionId (was: $previousAnswer)',
+    );
     notifyListeners();
   }
 
@@ -347,6 +407,18 @@ class StudentQuizProvider extends ChangeNotifier {
   Future<bool> submitQuizAttempt() async {
     if (_currentAttempt == null || _currentQuiz == null) return false;
 
+    // Prevent double submission
+    if (_isSubmitting) {
+      debugPrint('Cannot submit: Already submitting');
+      return false;
+    }
+
+    // Validate attempt is still in progress
+    if (_currentAttempt!.status != 'in_progress') {
+      debugPrint('Cannot submit: Attempt is not in progress');
+      return false;
+    }
+
     _isSubmitting = true;
     _errorMessage = null;
     notifyListeners();
@@ -355,10 +427,16 @@ class StudentQuizProvider extends ChangeNotifier {
       // Stop timer
       stopTimer();
 
+      // Validate answers before submission
+      final validatedAnswers = _validateAnswersBeforeSubmit();
+
+      debugPrint('Submitting quiz with ${validatedAnswers.length} answers');
+      debugPrint('Validated answers: $validatedAnswers');
+
       // Submit answers
       _currentAttempt = await studentQuizService.submitAttempt(
         _currentAttempt!.id,
-        _currentAnswers,
+        validatedAnswers,
         _currentQuiz!,
       );
 
@@ -427,6 +505,43 @@ class StudentQuizProvider extends ChangeNotifier {
     _currentQuestionIndex = 0;
     _errorMessage = null;
     notifyListeners();
+  }
+
+  /// Validate answers before submission to ensure data integrity
+  Map<String, String?> _validateAnswersBeforeSubmit() {
+    final validatedAnswers = <String, String?>{};
+
+    if (_currentQuiz == null) return validatedAnswers;
+
+    for (final question in _currentQuiz!.questions) {
+      final selectedOptionId = _currentAnswers[question.id];
+
+      if (selectedOptionId != null && selectedOptionId.isNotEmpty) {
+        // Validate that the selected option exists in the question
+        final optionExists = question.options.any(
+          (o) => o.id == selectedOptionId,
+        );
+
+        if (optionExists) {
+          validatedAnswers[question.id] = selectedOptionId;
+          debugPrint(
+            '✅ Valid answer: Question ${question.id} -> Option $selectedOptionId',
+          );
+        } else {
+          // Invalid option, don't include in submission
+          debugPrint(
+            '❌ Invalid answer removed: Question ${question.id} -> Option $selectedOptionId (not found)',
+          );
+          validatedAnswers[question.id] = null;
+        }
+      } else {
+        // No answer provided
+        validatedAnswers[question.id] = null;
+        debugPrint('⚪ No answer: Question ${question.id}');
+      }
+    }
+
+    return validatedAnswers;
   }
 
   /// Clear error message
