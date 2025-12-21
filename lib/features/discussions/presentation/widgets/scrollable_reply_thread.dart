@@ -229,7 +229,7 @@ class ScrollableReplyThread extends StatelessWidget {
 
           // Enhanced actions with better styling
           if (canReply)
-            Container(
+            SizedBox(
               width: double.infinity,
               child: TextButton.icon(
                 onPressed: isReplying
